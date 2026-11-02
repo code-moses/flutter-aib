@@ -1,10 +1,7 @@
 # AIB overview
 
-Date: 2026-09-23, status and pointers updated 2026-10-19. This file is the one summary of where the framework
-stands: what it measured, which decisions sit outside the ADRs, and what is
-still open. It replaces the plans, findings and research notes that used to
-live in `docs/` (see [Removed documents](#removed-documents)). The long form,
-with the reasoning and the literature, is the AIB Field Guide.
+This file is the summary of where the framework stands, what it measured and which decisions sit outside the ADRs.
+It replaces the plans, findings and research notes that used to live in `docs/`.
 
 | Read                                   | For                                                                                                                                             |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -13,28 +10,6 @@ with the reasoning and the literature, is the AIB Field Guide.
 | [`architecture.md`](architecture.md)   | diagrams of layers, ports, the episode, the run pipeline, deployment                                                                            |
 | this file                              | status, results, decisions beyond the ADRs, open threads                                                                                        |
 | `packages/*/README.md`                 | how to use each package, and its envelope conventions                                                                                           |
-
-## Status
-
-| Milestone         | What                                                                                                                       | State                                         |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| M0                | workspace, CI, core free of Flutter                                                                                        | done                                          |
-| M1                | synthetic benchmark with verified metrics                                                                                  | done                                          |
-| M2                | scripted agent drives the real todo app, 10 resets give identical snapshots                                                | done                                          |
-| M3                | semantics against intents, n=5, local model                                                                                | done, API rerun open                          |
-| M4                | three strategies, judged, bootstrap comparison, judge κ                                                                    | done, faithfulness rubric κ 0.34              |
-| M5                | SYSco Mobile+, 25 tasks, hybrid agent, effort report                                                                       | done                                          |
-| M6                | two foreign agents with an empty core diff                                                                                 | done                                          |
-| Phase 7           | preparation architecture and the retrieval sweep                                                                           | measured at n=1                               |
-| Review            | 36 findings from a full code review, all fixed                                                                             | done 2026-09-18                               |
-| todo_v2           | workspace app with scope gated intents, 15 tasks                                                                           | done, n=1                                     |
-| T5                | n=3 repeats of the sweep arms                                                                                              | open, the author runs them in the app harness |
-| Routing           | model routing between a local and a cloud model, Jev decider                                                               | measured at n=3                               |
-| MCP               | the CLI over MCP, steps 1 to 6                                                                                             | done 2026-09-23                               |
-| UI                | `aib_ui`, a local web app over runs and the workspace (ADR 0019)                                                           | done 2026-10-08                               |
-| Speed             | tool surfaces, Jev prefilter, prefix warm-up, interleaved repetitions, gemma4 at n=3                                       | done 2026-10-17                               |
-| Backlog           | steering, compaction, cassettes, gate and JUnit, fallback chains, semantics checks, frame attribution, on-device LiteRT-LM | built and run once 2026-10-17/19              |
-| Local vs frontier | gemma4:26b fixed 48/60 against claude-sonnet-5 51/60 on the sysco_v1 tuning split, plus holdout scores                     | 2026-10-19, study `local-vs-frontier-2026-10` |
 
 ## Results
 
@@ -59,7 +34,7 @@ The first suite measured after the code review. Judge `gpt-oss:20b` at k=1.
 | hybrid with RRF preparation, sonnet       |     0.92 |    0.81 |  53 207 |         0.069 |
 | ARTEMIS, sonnet, six task slice           |     0.00 |    0.00 | 130 371 |         0.288 |
 
-What the data supports, strongest first:
+Findings from the sweep:
 
 1. A blind agent is a different order of capability. Semantics only solved
    2 of 25 tasks where the same model solved 11 through intents,
@@ -93,18 +68,6 @@ it holds 26 of the 30 disagreements. Faithfulness is a fifth of every
 weighted score on sysco_v1, so report the score with and without it until
 the rubric is fixed. A fixed rubric is a new version and a re-judge, never
 an edit.
-
-### What attaching SYSco Mobile+ cost (M5)
-
-Measured from git on the app branch against `develop`, 2026-09-03 to
-2026-09-18: 116 commits, +27 951 lines, of which the benchmark harness is
-1 295 lines (4.6 %). Most of the rest is the shipped assistant and the
-instrumentation it shares with the benchmark and with screen readers:
-intents, semantics labels, state queries. The app surfaced 18 framework
-shortcomings (F1 to F18). Four of them changed `aib_core`: cached and
-reasoning tokens (F2), truncated results (F3), per tag slices (F9) and model
-warm up time (F12). None of the four changed the core's model. The core
-still knows no envelope shape.
 
 ### Foreign agents (M6)
 
@@ -317,50 +280,3 @@ transcribes, the benchmark measures tool use), human usability studies. Two
 validity threats to state in the thesis: tokens and LLM latency are self
 reported (cross checked by `token_report_discrepancy`), and
 `path_efficiency` rests on a hand written `optimalSteps`.
-
-## The code review (2026-09-17)
-
-A full read of the implementation found 36 defects (R1 to R36), all fixed
-with regression tests (`regressions_test.dart` in `aib_core`,
-`aib_agents` and `aib_flutter`). Ten changed numbers
-that had been written up. The three to know: follow ups never reached the
-model, so every earlier multi turn and simulated user finding is about the
-harness; the no progress guard compared results only and ended episodes
-that were still working; and the core had learned an app's vocabulary,
-which moved into the `intents` metric provider. Runs with an observation
-window, injected faults, partial credit rules, fields only expectations, and
-every rubric verdict are not comparable across 2026-09-18. The full list is
-in git history (see below).
-
-## Open threads
-
-1. Resolve `faithfulness_v1`: read its 26 disagreements, then either a new
-   rubric version and a re-judge, or a written labelling convention.
-2. T5: repeat the sweep arms at n=3 in the app harness.
-3. Run the Jev loop arms, each paired against the arm it changes.
-4. Route with a competent local model against a frontier cloud model, where
-   the oracle leaves room.
-5. Per turn ground truth for multi turn tasks. Only the final state is
-   scored.
-6. An information quality number for the baseline arm, so the preparation
-   comparison is not one sided.
-7. A reranker, if the n=3 sweep says retrieval quality binds.
-8. Rerun M3 and M4 against an API model.
-9. The MCP prompts (`design-arm`, `diagnose-run`, `tune-threshold`) are not
-   built.
-10. Tool calling on local models (ADR 0015). Built 2026-09-26 and measured once
-    on the todo_v2 tuning split (qwen3:8b, n=3, `experiments/tool-calling-2026-09-26`):
-    constrained decoding removes the empty-turn failure (4 to 0) without moving
-    the score; `hybrid_v5` costs 27% more tokens for no gain; intent and tool
-    examples are the best arm (+0.11 [−0.05, +0.31]) and need the holdout before
-    they count. Nothing there is significant. Newer tool-trained local models are
-    the next arm and have not been run; SYSco needs a commit and a pin bump first.
-11. An intent can name what it needs (ADR 0016, 2026-09-27): `intents.describe`
-    brings a required intent along unasked, marked `autoIncluded`. Built and
-    unit-tested; SYSco declares `requires` on `data.list`/`data.count`/
-    `data.aggregate` since 2026-09-27, but the collapsed round trip is
-    unmeasured — no benchmark run has used the catalogue since.
-12. The catalog groups itself and states its scope (ADR 0017, 2026-09-28):
-    `intents.catalog` orders its summary by `metadata['group']` and can carry
-    a one-sentence `scope`. Built and unit-tested; no app sets either yet, so
-    it is unmeasured.
