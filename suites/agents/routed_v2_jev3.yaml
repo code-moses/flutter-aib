@@ -1,0 +1,58 @@
+# todo_v2 routing arm: the jev decider on a local logit backend.
+#
+# Identical to routed_v2_jev2.yaml except for the `jev:` block — the same
+# question (criteria naming the two models, English), asked through aib_jev's
+# Ollama backend instead of the Python simple-jev server. What moves is the
+# decider's runtime and model (qwen3:4b GGUF under llama.cpp vs Qwen3.5-4B
+# bf16 under Transformers/MPS), so read the comparison as "a decision model at
+# ~50 ms instead of ~6 s", not as the same decider made faster.
+#
+# Measured before the arm (packages/aib_jev/test/ollama_live_test.dart):
+# 53 ms per one-question decision warm on qwen3:4b, against 6.0 s mean for
+# simple-jev in route-v2-jev. `side_call_latency_ms` shows what it is in a run.
+#
+# Run it like the other arms (ARMS="jev3" ./tool/route_runs.sh arms), with
+# Ollama serving qwen3:4b next to the two agent models.
+modelRouter:
+  decider: jev
+  onError: cloud
+  local:
+    provider: ollama
+    model: qwen3:1.7b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  cloud:
+    provider: ollama
+    model: qwen3:8b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  jev:
+    backend: ollama             # aib_jev: template + scoring in Dart, logits from Ollama
+    model: qwen3:4b             # not a side of the router: no reload between decider and agent
+    format: qwen3               # the raw prompt, rendered as Qwen3's own chat template
+    # template: v1-noul-decimal (the default) — identical to v1 for a `choice`
+    keepAlive: 30m
+    threshold: 0.5
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: lexical
+  prepare: [tools]
+  topK: 5
+  minScore: 0.25
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

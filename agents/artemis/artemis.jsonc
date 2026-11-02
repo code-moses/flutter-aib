@@ -1,0 +1,15 @@
+// ARTEMIS agent config for AIB runs. The Flash loop is the whole agent here:
+// its background step summariser and the video tools build a Google client
+// from this file (not from the LLM config the adapter passes), so both are
+// off — a benchmark run must not need a second provider.
+{
+  "agent": {
+    "flash": {
+      "max_turns": 0,
+      "step_summarizer": { "enabled": false }
+    },
+    "memory": {
+      "runtime": { "retry_limit": 0 }
+    }
+  }
+}

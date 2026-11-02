@@ -1,0 +1,29 @@
+# Speed sweep 2026-10-14: hybrid_union.yaml with only `model` changed.
+# The recommended hybrid: every strategy's tools offered at once, the model
+# chooses. Mirrors the winning hybrid of song2025apiagents on WebArena and
+# keeps the loop skeleton identical to the three single-strategy agents.
+#
+# Run against Ollama during development, against suites/agents/azure.yaml's
+# llm block for the final numbers — the agent cannot tell the difference.
+llm:
+  provider: ollama
+  model: gemma4:e2b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  # One tool call per turn: the loop executes queued calls back to back
+  # without the model seeing the results in between (F13).
+  parallelToolCalls: false
+  # Keep the last 8 tool results in full, stub the rest. Without this a long
+  # episode on a real app ends in a context-length abort that looks exactly
+  # like the agent giving up (F3).
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

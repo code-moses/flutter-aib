@@ -1,0 +1,53 @@
+# prepared_jev.yaml on gemma4:26b, the best local arm of the 2026-10-14 sweep:
+# the "pre-filter, then a fixed trimmed tool list" design on the standard tool
+# surface. Before the first model call, and without one, the preparer reads the
+# catalog, a decision model keeps the intents the task needs, and those are
+# described, so they are callable tools with their full schemas from turn 1.
+# The catalog itself never enters the conversation; unrelated intents are
+# listed by name only (escape hatch), and describing one still promotes it.
+#
+# Changes against prepared_jev beyond the model:
+# - the decision model is TypeSafe's hosted Jev (jev-latest; key from
+#   TYPESAFE_API_KEY, passed to the app as a dart-define by the runner), not
+#   Ollama's `qwen3:4b` tag, which is the Thinking-2507 build. ~0.3-0.5 s per
+#   call, measured 2026-10-15; its spend is a side call;
+# - discovery stays as in prepared_jev, so the briefing is comparable.
+#
+# Compare against local_gemma4_26b (no preparation, same surface) and
+# local_gemma4_26b_fixed (every intent typed up front).
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {baseUrl: https://api.typesafe.ai, model: jev-latest}
+  language: auto
+  selection: {threshold: 0.5}
+
+preparation:
+  strategy: jev
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  discoveryQuery: none
+  escapeHatchScope: relevant
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

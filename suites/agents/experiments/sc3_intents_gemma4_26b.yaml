@@ -1,0 +1,16 @@
+# Derived from ollama.yaml by aib_mcp on 2026-10-20 (agent: intent).
+#
+# Hypothesis: Intents-only strategy of the September sweep with gemma4:26b
+# instead of qwen3:8b. Expect success close to the union hybrid; the paired
+# delta against the hybrid shows whether the extra strategies help a competent
+# model.
+#
+# One change against ollama.yaml:
+#   model: "qwen3:8b" -> "gemma4:26b"
+#
+# agentConfigHash: d9c4382df7a7ff78
+provider: ollama
+model: gemma4:26b
+baseUrl: http://localhost:11434
+contextTokens: 32768
+think: false

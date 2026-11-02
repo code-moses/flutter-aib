@@ -1,0 +1,35 @@
+# todo_v2: todo_v2_prepared_lexical.yaml with the decision model selecting the
+# tools instead of BM25. One key changes — `strategy` — plus the `decisions:`
+# block the jev strategy requires.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {backend: ollama, model: qwen3:4b, format: qwen3, keepAlive: 30m}
+  language: auto
+  selection: {threshold: 0.5}
+
+preparation:
+  strategy: jev
+  prepare: [tools]
+  topK: 5
+  minScore: 0.25
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

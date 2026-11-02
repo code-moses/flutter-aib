@@ -1,0 +1,16 @@
+# Decision backends for packages/aib_mcp/bin/jev_probe.dart: `jev:` blocks
+# (aib_jev JevConfig). Keys come from the environment (TYPESAFE_API_KEY for
+# the hosted API); pick some with --only.
+backends:
+  hosted-latest: {baseUrl: https://api.typesafe.ai, model: jev-latest}
+  hosted-preview: {baseUrl: https://api.typesafe.ai, model: jev-preview}
+  # Local through Ollama's logprobs. The plain qwen3:4b tag is the thinking
+  # model; the instruct one wants chatml.
+  ollama-qwen3-4b-instruct: {backend: ollama, model: 'qwen3:4b-instruct-2507-q4_K_M', format: chatml, keepAlive: 30m}
+  ollama-qwen3-8b: {backend: ollama, model: 'qwen3:8b', format: qwen3, keepAlive: 30m}
+  # A self-hosted System One server (simple-jev, LiteVar, openjev); start it
+  # first, with the model named here.
+  simple-jev: {baseUrl: 'http://127.0.0.1:8000', model: Qwen/Qwen3.5-4B}
+  # MediaPipe's Decision Maker over the System One shape (tool/mediapipe_jev_server.sh):
+  # EmbeddingGemma 2 text 270M, a noul is probability_true of a BooleanQuestion.
+  mediapipe-eg2: {baseUrl: 'http://127.0.0.1:8092', model: embeddinggemma-2-text-270m}

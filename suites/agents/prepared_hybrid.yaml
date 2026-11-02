@@ -1,0 +1,44 @@
+# Condition G: BM25 and dense retrieval fused by reciprocal rank fusion.
+#
+# The standard recipe, and the one the sweep has to justify against its two
+# halves: sparse and dense fail in opposite directions — exact identifiers
+# against paraphrase and translation — and RRF combines their ranks, so the
+# two score scales never have to be calibrated against each other. `rrfK` is
+# the constant from the original paper.
+#
+# Worth running only if it beats both prepared_lexical and prepared_vector;
+# "the most moving parts" is a cost, not a feature (memo section 5).
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+embedding:
+  provider: ollama
+  model: nomic-embed-text
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: hybrid
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  rrfK: 60
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

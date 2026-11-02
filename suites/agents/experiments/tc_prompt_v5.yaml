@@ -1,0 +1,34 @@
+# Derived from experiments/tc_base.yaml by aib_mcp on 2026-09-26 (agent:
+# hybrid).
+#
+# Hypothesis: Working patterns (look up then act, read the error, count with
+# the counting intent, say what you found) plus one traced example in an
+# invented app cut guessed identifiers and repeated failed calls. Shows as
+# fewer bad_params / intent_rejected results per episode and fewer turns to
+# the answer than tc_base, at similar or lower tokens.
+#
+# One change against experiments/tc_base.yaml:
+#   agent.prompt: (absent) -> "hybrid_v5"
+#
+# agentConfigHash: 34bb1a4b370b0fc4
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  captureModelOutput: true
+  prompt: hybrid_v5
+router:
+  router: union
+  strategies:
+    - intents
+    - genui
+    - user
+    - semantics
+  bootstrap: intents.catalog
+  profile: full

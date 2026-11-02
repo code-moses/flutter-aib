@@ -1,0 +1,24 @@
+# Copy to aib_mcp.local.yaml (git-ignored) and adjust. Merged over
+# aib_mcp.yaml: machine-local projects and hosts live here, not in the
+# framework's own config.
+runners:
+  sysco_v1:
+    suite: sysco_v1
+    cwd: /Users/you/dev/gitlab/dynamate          # the app repository
+    # The app bundles suites/agents/* as assets without subdirectories;
+    # staging puts a derived arm at the top of agents/ as {agentConfigFile}.
+    stageSuites: true
+    env:
+      AIB_SUITES: '{suitesDir}'
+    prepare: [fvm, dart, integration_test/aib/prepare_benchmark_inputs.dart]
+    command: [fvm, flutter, test, integration_test/aib/m5_live_benchmark_test.dart, -d, macos,
+              '--dart-define=AIB_AGENT={agentConfigFile}', '--dart-define=AIB_AGENTS={agent}',
+              '--dart-define=AIB_REPS={reps}', '--dart-define=AIB_TASKS={tasks}',
+              '--dart-define=AIB_OUT={out}', '--dart-define=AIB_OUT_ROOT=downloads']
+    # Runs even after a cancel or a failure: a release build never ships a
+    # task suite.
+    cleanup: [fvm, dart, integration_test/aib/discard_benchmark_inputs.dart]
+    # The sandboxed app writes here; the server copies it into results/{out}.
+    output: '{home}/Downloads/aib-runs/{out}'
+judges:
+  sysco_v1: ollama_judge

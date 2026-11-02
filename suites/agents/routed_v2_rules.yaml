@@ -1,0 +1,59 @@
+# todo_v2 routing arm: deterministic baseline decider
+#
+# The four routed_v2_* files differ in exactly one key — `modelRouter.decider`
+# — so the comparison moves the decider and nothing else: same preparer, same
+# router, same two models, same prompt.
+#
+# "cloud" here is qwen3:8b, not a frontier model: this machine has no API key,
+# and the experiment needs a capability *gap*, not a particular vendor. 1.7b
+# against 8b is that gap, and every number below is about the router, not
+# about Anthropic. Re-run with `cloud.provider: anthropic` for the real thing;
+# nothing else in the file changes.
+#
+# Reference arms: decider `local` and `cloud`. Score with
+#   aib route --local results/route-v2-local --cloud results/route-v2-cloud \
+#     --routed results/route-v2-rules --routed results/route-v2-jev \
+#     --metrics routing,prefetch
+modelRouter:
+  decider: rules
+  onError: cloud
+  local:
+    provider: ollama
+    model: qwen3:1.7b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  cloud:
+    provider: ollama
+    model: qwen3:8b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  rules:
+    # A priori, not fitted on todo_v2: tuning on the suite that scores the
+    # router would be routing on the test set.
+    maxLocalWords: 12
+    cloudPatterns:
+      - '\b(all|every|each|unless|then|if|but|only|except)\b'
+      - '\b(alle|jede[nrs]?|falls|wenn|dann|danach|aber|nur|außer)\b'
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: lexical
+  prepare: [tools]
+  topK: 5
+  minScore: 0.25
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # A runner is thrown away after the build, so fvm's git mirror would only
+  # clone Flutter twice. Go straight into the version cache.
+  FVM_USE_GIT_CACHE: "false"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bootstrap Dart only so that `dart pub global activate fvm` can run. The
+      # SDK the build actually uses is the one fvm installs from .fvmrc below.
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Install fvm
+        run: |
+          dart pub global activate fvm
+          echo "${PUB_CACHE:-$HOME/.pub-cache}/bin" >> "$GITHUB_PATH"
+
+      # Single source of truth for the SDK: .fvmrc (managed by fvm), which
+      # names an exact version rather than a channel — a channel moves under a
+      # half-finished run.
+      - name: Install the SDK from .fvmrc
+        run: |
+          fvm install --setup
+          fvm flutter --version
+
+      - name: Core dependency check (M0 — aib_core is Flutter-free)
+        run: bash tool/check_core_deps.sh
+
+      - name: Pub get (workspace)
+        run: fvm flutter pub get
+
+      - name: Analyze
+        run: fvm dart analyze .
+
+      - name: Format
+        run: fvm dart format --output=none --set-exit-if-changed .
+
+      - name: Test aib_core
+        run: fvm dart test
+        working-directory: packages/aib_core
+
+      - name: Test aib_protocol
+        run: fvm dart test
+        working-directory: packages/aib_protocol
+
+      - name: Test aib_jev
+        run: fvm dart test
+        working-directory: packages/aib_jev
+
+      - name: Test aib_agents
+        run: fvm dart test
+        working-directory: packages/aib_agents
+
+      - name: Test aib_cli
+        run: fvm dart test
+        working-directory: packages/aib_cli
+
+      - name: Test aib_mcp
+        run: fvm dart test
+        working-directory: packages/aib_mcp
+
+      - name: Test aib_ui
+        run: fvm dart test
+        working-directory: packages/aib_ui
+
+      - name: Test aib_otel
+        run: fvm dart test
+        working-directory: packages/aib_otel
+
+      - name: Test aib_flutter
+        run: fvm flutter test
+        working-directory: packages/aib_flutter
+
+      - name: Test todo_app (incl. M2 benchmark tests)
+        run: fvm flutter test
+        working-directory: apps/todo_app

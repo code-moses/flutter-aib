@@ -1,0 +1,15 @@
+# Local Ollama reference model (risk mitigation, spec §12: develop against
+# Ollama, final runs against API models; §11 Phase 6: second model for
+# cross_model_variance). Requires a tool-calling model.
+provider: ollama
+model: qwen3:8b
+baseUrl: http://localhost:11434
+# num_ctx — Ollama's 4k default silently drops the oldest messages, which
+# would truncate the task instruction once serialized semantics trees enter
+# the conversation. Explicit here so the window is part of the run config.
+contextTokens: 32768
+# qwen3 reasons before answering by default. Disabled here to keep episodes
+# affordable: the reasoning phase multiplies completion tokens and latency.
+# Whether it changes the score is itself measurable — flip to `true` and
+# compare the two runs.
+think: false

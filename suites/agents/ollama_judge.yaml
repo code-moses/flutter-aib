@@ -1,0 +1,12 @@
+# Judge model for `artifactRubric` criteria (spec §5.2), pinned by
+# suites/todo_v1.yaml. Deliberately a *different model family* than the
+# reference agents: a judge that shares the agent's weights tends to prefer
+# its own output ("did the judge grade its own homework?", reported as
+# judgeAgentOverlap in every report).
+provider: ollama
+model: gpt-oss:20b
+baseUrl: http://localhost:11434
+contextTokens: 32768
+# Graded reasoning: judging a surface against 4 literal criteria is a
+# counting task, and low effort keeps k=3 consultations per episode cheap.
+think: low

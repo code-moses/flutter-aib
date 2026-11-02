@@ -1,0 +1,35 @@
+# hybrid_union.yaml plus a completion check: before `done` leaves the loop, a
+# decision model reads the task, the latest results and the agent's claim and
+# answers a noul "the goal is fully achieved" (docs/overview.md, Jev idea 3).
+#
+# One change against hybrid_union.yaml: the `decisions:` block. Target:
+# `premature_termination`, 0.37 on every qwen3 arm vs 0.04–0.11 on Sonnet in
+# the 2026-09-18 sweep — the largest local/frontier gap measured.
+#
+# maxRejections: 1 — a `done` is sent back at most once per episode, so a
+# checker that is wrong about a finished task costs one turn, not the budget.
+# Replay other thresholds from `extra.decisions[].noul`; score with
+# --metrics decisions (completion_rejection_rate) next to the verdicts.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {backend: ollama, model: qwen3:4b, format: qwen3, keepAlive: 30m}
+  language: auto
+  maxStateChars: 6000
+  completionCheck: {threshold: 0.5, maxRejections: 1}

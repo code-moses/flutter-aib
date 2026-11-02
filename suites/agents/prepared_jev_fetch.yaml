@@ -1,0 +1,52 @@
+# Condition J+F: prepared_jev.yaml plus the fetch axis — after the decision
+# model keeps the relevant data lists of app.endpoints, search the best one
+# for the thing the task names, before the first LLM call ("pre-select the
+# relevant data lists and fetch operations").
+#
+# Identical to prepared_jev.yaml except `prepare` gains `fetch`, the `fetch`
+# rules, and a budget of 6 envelopes (bootstrap, describe, two listings, two
+# searches). The rules are SYSco Mobile+'s vocabulary — app.endpoints,
+# data.search, endpointId — which is why they live here and not in the
+# framework. A rule whose intent the catalogue marks `act` is refused at run
+# time: preparation reads, it never changes the app.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {backend: ollama, model: qwen3:4b, format: qwen3, keepAlive: 30m}
+  language: auto
+  selection: {threshold: 0.5}
+
+preparation:
+  strategy: jev
+  prepare: [tools, discovery, fetch]
+  topK: 5
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  discoveryQuery: none
+  escapeHatchScope: relevant
+  queryParam: query
+  fetch:
+    - after: app.endpoints
+      intent: data.search
+      params: {endpointId: '{row.id}', query: '{query}', limit: 5}
+      maxRows: 2
+  budget:
+    maxEnvelopes: 6
+    maxBriefingBytes: 4096
+  escapeHatch: true

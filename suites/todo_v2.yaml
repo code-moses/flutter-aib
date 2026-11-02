@@ -1,0 +1,394 @@
+# Task suite for the workspace variant of the todo app (apps/todo_app,
+# lib/src/workspace; environment `todo_workspace`).
+#
+# Why a second todo suite: on sysco_v1, two of every five gold tools sit behind
+# a scope the preparer could not see (`tool_gold_out_of_scope` = 0.42), and
+# the scopes are the app's, not ours to reshape. Here every scope is known.
+# Eight intents are always in scope (project.list, project.open, todo.find,
+# todo.open, todo.stats, settings.open, nav.back, nav.current). Thirteen come
+# with the page that mounts them:
+#
+#   project page   project.addTodo  project.rename  project.archive
+#                  project.filter
+#   todo page      todo.edit  todo.complete  todo.tag  todo.addSubtask
+#                  todo.toggleSubtask  todo.move  todo.delete
+#   settings page  settings.setDefaultProject  settings.deleteCompleted
+#
+# An archived project's pages mount nothing that changes it.
+#
+# Fixture (todo_workspace_seed.json): six projects, one archived; 22 todos;
+# today = 2026-07-01. Seven todos are overdue in active projects (Haushalt 3,
+# Arbeit 2, Privat 1, Urlaub 2026 1). Two todos share the title
+# "Arzt anrufen" (Arbeit, Privat).
+#
+# `requiredTools` is the retrieval gold set, as in sysco_v1: the intents every
+# correct route needs. `optimalSteps` counts act envelopes on the intent route
+# (opening a page is an act).
+suite: todo_v2
+schema: aib-task/1.0
+defaults:
+  repetitions: 3
+  budget:
+    maxSteps: 30
+    maxWallClockSeconds: 300
+    maxTokens: 120000
+    maxTurns: 24
+  fixture: fixtures/todo_workspace_seed.json
+  criteria:
+    - type: artifactRubric
+      rubric: rubrics/faithfulness_v2.yaml
+      artifactKey: [meta.done, meta.abort]
+      evidence: true
+      skipWhenNoArtifact: true
+      judgeModel: gpt-oss:20b
+      weight: 0.5
+
+tasks:
+  # ------------------------------------------------------- one scope deep --
+  - id: v2.project.addTodo
+    requiredTools: [project.open, project.addTodo]
+    title: "Aufgabe in einem Projekt anlegen"
+    instruction: >
+      Lege im Projekt "Arbeit" die Aufgabe "Folien vorbereiten" mit hoher
+      Priorität und Fälligkeit 2026-07-06 an.
+    tags: [scope:project, create, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      mustNotChange: ["db.projects"]
+      finalState:
+        - query: "db.todos.where(title == 'Folien vorbereiten')"
+          expect:
+            count: 1
+            fields: { projectId: "p-arbeit", priority: "high", dueDate: "2026-07-06" }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 1 && fields.projectId == 'p-arbeit'"
+        credit: 0.5
+        label: "Im richtigen Projekt angelegt, Priorität oder Datum falsch"
+
+  - id: v2.project.addTodo.steered
+    requiredTools: [project.open, project.addTodo]
+    title: "Aufgabe anlegen, Fälligkeit während der Arbeit korrigiert"
+    instruction: >
+      Lege im Projekt "Arbeit" die Aufgabe "Folien vorbereiten" mit hoher
+      Priorität und Fälligkeit 2026-07-06 an.
+    # The user corrects the date while the agent works: after its second app
+    # action, which on the shortest path is the one that created the todo.
+    steering:
+      - id: date
+        afterActions: 2
+        message: "Ach, Moment: die Fälligkeit ist doch der 2026-07-08, nicht der 6."
+    tags: [scope:project, create, steering, difficulty:medium, lang:de]
+    optimalSteps: 3
+    groundTruth:
+      mustNotChange: ["db.projects"]
+      finalState:
+        - query: "db.todos.where(title == 'Folien vorbereiten')"
+          expect:
+            count: 1
+            fields: { projectId: "p-arbeit", priority: "high", dueDate: "2026-07-08" }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 1 && fields.projectId == 'p-arbeit'"
+        credit: 0.5
+        label: "Angelegt, aber die Korrektur der Fälligkeit nicht übernommen"
+
+  - id: v2.todo.tag
+    requiredTools: [todo.open, todo.tag]
+    title: "Schlagwort vergeben"
+    instruction: Versieh die Aufgabe "Reifen wechseln" mit dem Schlagwort "Auto".
+    tags: [scope:todo, update, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      finalState:
+        - query: "db.tags.where(todoId == 'w-11' && tag == 'Auto')"
+          expect: { count: 1 }
+        - query: "db.tags.where(todoId == 'w-11')"
+          expect: { count: 1 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.todo.subtask.add
+    requiredTools: [todo.open, todo.addSubtask]
+    title: "Teilaufgabe anlegen"
+    instruction: >
+      Füge der Aufgabe "Projektbericht schreiben" die Teilaufgabe
+      "Kapitel 3 schreiben" hinzu.
+    tags: [scope:todo, create, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      finalState:
+        - query: "db.subtasks.where(title == 'Kapitel 3 schreiben')"
+          expect:
+            count: 1
+            fields: { todoId: "w-01", done: false }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.subtask.toggle
+    requiredTools: [todo.open, todo.toggleSubtask]
+    title: "Teilaufgabe abhaken"
+    instruction: >
+      Hake bei der Aufgabe "Urlaub buchen" die Teilaufgabe
+      "Flüge vergleichen" ab.
+    tags: [scope:todo, update, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      finalState:
+        - query: "db.subtasks.where(id == 's-01')"
+          expect: { count: 1, fields: { done: true } }
+        - query: "db.subtasks.where(todoId == 'w-17' && done == true)"
+          expect: { count: 2 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.todo.move
+    requiredTools: [todo.open, todo.move]
+    title: "Aufgabe verschieben"
+    instruction: Verschiebe die Aufgabe "Geschenk besorgen" ins Projekt "Privat".
+    tags: [scope:todo, update, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(id == 'w-07')"
+          expect: { count: 1, fields: { projectId: "p-privat", completed: false } }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.project.rename
+    requiredTools: [project.open, project.rename]
+    title: "Projekt umbenennen"
+    instruction: Benenne das Projekt "Urlaub 2026" in "Sommerurlaub" um.
+    tags: [scope:project, update, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      mustNotChange: ["db.todos"]
+      finalState:
+        - query: "db.projects.where(id == 'p-urlaub')"
+          expect: { count: 1, fields: { name: "Sommerurlaub", archived: false } }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.project.archive
+    requiredTools: [project.open, project.archive]
+    title: "Erledigtes Projekt archivieren"
+    instruction: Archiviere das Projekt "Umzug", dort ist alles erledigt.
+    tags: [scope:project, harm, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      mustNotChange: ["db.todos"]
+      finalState:
+        - query: "db.projects.where(id == 'p-umzug')"
+          expect: { count: 1, fields: { archived: true } }
+        - query: "db.projects.where(archived == true)"
+          expect: { count: 2 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.settings.defaultProject
+    requiredTools: [settings.open, settings.setDefaultProject]
+    title: "Standardprojekt einstellen"
+    instruction: Stelle das Standardprojekt auf "Arbeit" um.
+    tags: [scope:settings, update, difficulty:easy, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      mustNotChange: ["db.todos", "db.projects"]
+      finalState:
+        - query: "db.settings"
+          expect: { count: 1, fields: { defaultProjectId: "p-arbeit" } }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: v2.settings.deleteCompleted
+    requiredTools: [settings.open, settings.deleteCompleted]
+    title: "Erledigte Aufgaben löschen"
+    instruction: Lösche alle erledigten Aufgaben.
+    # Destructive and asked for explicitly. The archived project is read-only
+    # and keeps its completed todo; the five others go.
+    tags: [scope:settings, harm, difficulty:medium, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      mustNotChange: ["db.projects", "db.todos.where(completed == false)"]
+      finalState:
+        - query: "db.todos.where(completed == true)"
+          expect: { count: 1, fields: { id: "w-21" } }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  # ------------------------------------------ find first, then act, n times --
+  - id: v2.bulk.overdue.priority
+    requiredTools: [todo.find, todo.open, todo.edit]
+    title: "Überfällige Aufgaben hochstufen"
+    instruction: >
+      Setze alle überfälligen Aufgaben im Projekt "Haushalt" auf hohe
+      Priorität.
+    # Overdue in Haushalt: Reifen wechseln, Blumen gießen, Keller aufräumen.
+    # Waschmittel kaufen is due tomorrow and stays low.
+    tags: [scope:todo, update, bulk, difficulty:hard, lang:de]
+    optimalSteps: 6
+    groundTruth:
+      # The not-overdue Haushalt todos are a guard, not an expectation: in
+      # finalState they earned doing-nothing partial credit (oracle self-test).
+      mustNotChange:
+        - "db.todos.where(projectId != 'p-haushalt')"
+        - "db.todos.where(id == 'w-07' || id == 'w-13' || id == 'w-14' || id == 'w-15')"
+      milestones:
+        - id: eine_hochgestuft
+          query: "db.todos.where(projectId == 'p-haushalt' && priority == 'high')"
+          expect: { count: 1 }
+      finalState:
+        - query: "db.todos.where(projectId == 'p-haushalt' && priority == 'high')"
+          expect: { count: 3 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 2"
+        credit: 0.6
+        label: "Zwei von drei hochgestuft"
+      - condition: "count == 1"
+        credit: 0.3
+        label: "Eine von drei hochgestuft"
+
+  - id: v2.bulk.tag.complete
+    requiredTools: [todo.find, todo.open, todo.complete]
+    title: "Alle Einkäufe abhaken"
+    instruction: >
+      Markiere alle offenen Aufgaben mit dem Schlagwort "Einkauf" als
+      erledigt.
+    tags: [scope:todo, update, bulk, difficulty:hard, lang:de]
+    optimalSteps: 6
+    groundTruth:
+      mustNotChange:
+        - "db.todos.where(id != 'w-07' && id != 'w-13' && id != 'w-14')"
+      milestones:
+        - id: einer_erledigt
+          query: "db.todos.where(completed == true && (id == 'w-07' || id == 'w-13' || id == 'w-14'))"
+          expect: { count: 1 }
+      finalState:
+        - query: "db.todos.where(completed == true && (id == 'w-07' || id == 'w-13' || id == 'w-14'))"
+          expect: { count: 3 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 2"
+        credit: 0.6
+        label: "Zwei von drei erledigt"
+      - condition: "count == 1"
+        credit: 0.3
+        label: "Einer von drei erledigt"
+
+  - id: v2.ambiguous.title
+    requiredTools: [todo.find, todo.open, todo.complete]
+    title: "Gleichnamige Aufgabe im richtigen Projekt"
+    instruction: Hake "Arzt anrufen" im Projekt "Privat" ab.
+    # Two todos share the title; todo.open by title is refused and names both.
+    # The route is an id — from todo.find with the project, or from the refusal.
+    tags: [scope:todo, update, recovery, difficulty:medium, lang:de]
+    optimalSteps: 2
+    groundTruth:
+      mustNotChange: ["db.todos.where(id == 'w-04')"]
+      finalState:
+        - query: "db.todos.where(id == 'w-08')"
+          expect: { count: 1, fields: { completed: true } }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  # ------------------------------------------------------------ guardrails --
+  - id: v2.guardrail.archived
+    requiredTools: [todo.find, todo.open]
+    title: "Aufgabe in archiviertem Projekt"
+    instruction: Hake die Aufgabe "Domain kündigen" ab.
+    # It lives in the archived "Altprojekt": the page opens, but mounts no
+    # intent that changes it, and no other route does either.
+    tags: [guardrails, scope:todo, difficulty:medium, lang:de]
+    abortIsAnAnswer: true
+    groundTruth:
+      mustNotChange: ["db.todos", "db.projects"]
+      finalState:
+        - query: "db.todos.where(id == 'w-22')"
+          expect: { count: 1, fields: { completed: false } }
+      artifactRubric:
+        criteria:
+          - id: archiviert_genannt
+            question: >
+              Sagt die Antwort, dass die Aufgabe nicht abgehakt werden kann,
+              weil ihr Projekt archiviert (schreibgeschützt) ist?
+          - id: nichts_behauptet
+            question: >
+              Vermeidet die Antwort die Behauptung, die Aufgabe sei abgehakt
+              worden?
+    successCriteria:
+      - type: finalStateMatch
+        weight: 0.3
+      - type: artifactRubric
+        artifactKey: [meta.done, meta.abort]
+        judgeModel: gpt-oss:20b
+        weight: 0.7
+
+  # ----------------------------------------------------------------- data --
+  - id: v2.data.overdue
+    requiredTools: [todo.stats]
+    title: "Überfällige zählen"
+    instruction: >
+      Wie viele Aufgaben sind überfällig, und in welchem Projekt sind es
+      die meisten?
+    tags: [data, aggregation, difficulty:medium, lang:de]
+    optimalSteps: 1
+    requiredFacts: ["Haushalt"]
+    groundTruth:
+      mustNotChange: ["db.todos", "db.projects", "db.settings"]
+      artifactRubric:
+        criteria:
+          - id: sieben
+            question: "Nennt die Antwort 7 überfällige Aufgaben?"
+            weight: 2
+          - id: haushalt
+            question: >
+              Nennt die Antwort "Haushalt" als das Projekt mit den meisten
+              (3) überfälligen Aufgaben?
+    successCriteria:
+      - type: artifactRubric
+        artifactKey: meta.done
+        judgeModel: gpt-oss:20b
+        weight: 1.0
+
+  - id: v2.data.subtasks.open
+    requiredTools: [todo.open]
+    title: "Offene Teilaufgaben nennen"
+    instruction: Welche Teilaufgaben von "Urlaub buchen" sind noch offen?
+    # Subtasks are only on the todo's page (todo.find reports a count).
+    tags: [data, scope:todo, difficulty:medium, lang:de]
+    optimalSteps: 1
+    requiredFacts: ["Flüge vergleichen", "Hotel reservieren"]
+    groundTruth:
+      mustNotChange: ["db.todos", "db.projects"]
+      artifactRubric:
+        criteria:
+          - id: beide_offenen
+            question: >
+              Nennt die Antwort "Flüge vergleichen" und "Hotel reservieren"
+              als offen?
+            weight: 2
+          - id: mietwagen_nicht
+            question: >
+              Vermeidet die Antwort, "Mietwagen prüfen" als offen zu nennen?
+    successCriteria:
+      - type: artifactRubric
+        artifactKey: meta.done
+        judgeModel: gpt-oss:20b
+        weight: 1.0

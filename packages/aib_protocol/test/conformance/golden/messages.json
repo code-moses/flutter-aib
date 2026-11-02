@@ -1,0 +1,246 @@
+{
+  "description": "Golden message catalog — formal reference of Agent/Environment Protocol 2.0 (spec §4.5): JSON-RPC 2.0 requests, one per line on a stream transport. Every conforming implementation must accept these requests and answer with a result carrying the listed keys. Optional methods (env.stateFingerprint, env.sampleResources, agent.warmUp, agent.modelIdentity) are served only when advertised in the handshake result's \"capabilities\".",
+  "messages": [
+    {
+      "name": "handshake.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "method": "aib.handshake",
+        "params": {
+          "protocolVersion": "2.0",
+          "role": "engine"
+        }
+      },
+      "resultKeys": [
+        "protocolVersion",
+        "accepted",
+        "capabilities"
+      ]
+    },
+    {
+      "name": "env.describe.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "env.describe",
+        "params": {}
+      },
+      "resultKeys": [
+        "descriptor"
+      ]
+    },
+    {
+      "name": "env.reset.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "env.reset",
+        "params": {
+          "fixture": {
+            "id": "baseline",
+            "data": {
+              "db": {
+                "todos": [
+                  {
+                    "title": "Existing",
+                    "completed": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "resultKeys": []
+    },
+    {
+      "name": "env.handle.observe.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "env.handle",
+        "params": {
+          "envelope": {
+            "key": "state.list",
+            "kind": "observe",
+            "payload": {
+              "path": "db.todos"
+            },
+            "decision": {
+              "model": "demo",
+              "tokensPrompt": 10,
+              "tokensCompletion": 2,
+              "llmLatencyMs": 1,
+              "llmCalls": 1
+            }
+          }
+        }
+      },
+      "resultKeys": [
+        "result"
+      ]
+    },
+    {
+      "name": "env.handle.act.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "env.handle",
+        "params": {
+          "envelope": {
+            "key": "state.insert",
+            "kind": "act",
+            "payload": {
+              "path": "db.todos",
+              "item": {
+                "title": "Milch kaufen",
+                "completed": false
+              }
+            }
+          }
+        }
+      },
+      "resultKeys": [
+        "result"
+      ]
+    },
+    {
+      "name": "env.captureFinalState.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "env.captureFinalState",
+        "params": {
+          "queries": [
+            {
+              "query": "db.todos.where(title == 'Milch kaufen')"
+            }
+          ]
+        }
+      },
+      "resultKeys": [
+        "snapshot"
+      ]
+    },
+    {
+      "name": "agent.manifest.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "agent.manifest",
+        "params": {}
+      },
+      "resultKeys": [
+        "manifest"
+      ]
+    },
+    {
+      "name": "agent.startEpisode.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "agent.startEpisode",
+        "params": {
+          "task": {
+            "id": "todo.create.simple",
+            "title": "Create todo",
+            "instruction": "Create a todo titled 'Milch kaufen'.",
+            "budget": {
+              "maxSteps": 25,
+              "maxWallClockSeconds": 180,
+              "maxTokens": 60000
+            },
+            "fixture": {
+              "id": "baseline"
+            },
+            "tags": [
+              "crud"
+            ],
+            "groundTruth": {},
+            "successCriteria": [
+              {
+                "type": "finalStateMatch",
+                "weight": 1.0
+              }
+            ],
+            "partialCredit": [],
+            "metadata": {}
+          },
+          "environment": {
+            "environmentId": "mock",
+            "version": "1.0.0",
+            "envelopes": [
+              {
+                "key": "state.list",
+                "kind": "observe"
+              }
+            ],
+            "metadata": {}
+          }
+        }
+      },
+      "resultKeys": []
+    },
+    {
+      "name": "agent.next.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "agent.next",
+        "params": {
+          "lastResult": {
+            "status": "ok",
+            "payload": {
+              "count": 1
+            }
+          },
+          "budget": {
+            "stepsUsed": 1,
+            "maxSteps": 25,
+            "elapsedMs": 100,
+            "maxWallClockMs": 180000,
+            "tokensUsed": 12,
+            "maxTokens": 60000
+          }
+        }
+      },
+      "resultKeys": [
+        "envelope"
+      ]
+    },
+    {
+      "name": "agent.endEpisode.request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": "agent.endEpisode",
+        "params": {
+          "outcome": {
+            "reason": "done",
+            "message": "created"
+          }
+        }
+      },
+      "resultKeys": []
+    },
+    {
+      "name": "forward-compatibility.unknown-fields",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "method": "env.describe",
+        "params": {
+          "futureOption": true,
+          "x-future-param": 1
+        },
+        "x-future-member": {
+          "ignored": true
+        }
+      },
+      "resultKeys": [
+        "descriptor"
+      ]
+    }
+  ]
+}

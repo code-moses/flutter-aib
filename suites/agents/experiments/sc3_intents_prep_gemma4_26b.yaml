@@ -1,0 +1,43 @@
+# Derived from prepared_intents.yaml by aib_mcp on 2026-10-20 (agent:
+# prepared).
+#
+# Hypothesis: Intents with lexical preparation (September prepared_intents)
+# with gemma4:26b. Expect fewer tokens than intents-only at unchanged success
+# (tokens_total, weighted_score).
+#
+# One change against prepared_intents.yaml:
+#   llm.model: "qwen3:8b" -> "gemma4:26b"
+#
+# agentConfigHash: 34bb1a4b370b0fc4
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+router:
+  router: union
+  strategies:
+    - intents
+    - user
+  bootstrap: intents.catalog
+  profile: full
+preparation:
+  strategy: lexical
+  prepare:
+    - tools
+    - discovery
+  topK: 5
+  minScore: 0.25
+  discoveryKeys:
+    - app.forms
+    - app.endpoints
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

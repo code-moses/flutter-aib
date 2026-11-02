@@ -1,0 +1,16 @@
+{
+  "db": {
+    "todos": [
+      {"id": "t-01", "title": "Steuererklärung abgeben", "dueDate": "2026-07-04", "notes": null, "completed": false},
+      {"id": "t-02", "title": "Zahnarzttermin vereinbaren", "dueDate": "2026-07-15", "notes": null, "completed": false},
+      {"id": "t-03", "title": "Projektbericht schreiben", "dueDate": "2026-07-08", "notes": "Kapitel 3 fehlt", "completed": false},
+      {"id": "t-04", "title": "Blumen gießen", "dueDate": "2026-06-28", "notes": null, "completed": false},
+      {"id": "t-05", "title": "Reifen wechseln", "dueDate": "2026-06-20", "notes": "Werkstatt anrufen", "completed": false},
+      {"id": "t-06", "title": "Geschenk besorgen", "dueDate": "2026-07-30", "notes": null, "completed": false},
+      {"id": "t-07", "title": "Wäsche waschen", "dueDate": null, "notes": null, "completed": false},
+      {"id": "t-08", "title": "Einkauf erledigt", "dueDate": "2026-06-15", "notes": null, "completed": true},
+      {"id": "t-09", "title": "Anmeldung gesendet", "dueDate": "2026-06-10", "notes": null, "completed": true},
+      {"id": "t-10", "title": "Obsolete Aufgabe", "dueDate": "2026-05-01", "notes": null, "completed": true}
+    ]
+  }
+}

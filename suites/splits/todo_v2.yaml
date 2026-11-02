@@ -1,0 +1,15 @@
+# Holdout of todo_v2 (docs/overview.md, "The MCP server").
+#
+# Tasks listed here are never shown to, run by or scored for a tuning agent
+# over MCP; aib_holdout_score runs an arm on them, with a person's approval
+# every time, and journals the call. Seeded: the 5 of 15 task ids
+# whose sha256("aib-split-v1:<id>") sorts first (SuiteSplit.seeded). Review
+# the choice once, then leave it: moving the holdout voids every holdout
+# score made before.
+suite: todo_v2
+holdout:
+  - v2.bulk.tag.complete
+  - v2.data.overdue
+  - v2.data.subtasks.open
+  - v2.subtask.toggle
+  - v2.todo.move

@@ -1,0 +1,38 @@
+# hybrid_union.yaml plus an action guard in shadow mode: every destructive or
+# outward-facing intent is reviewed by a decision model ("wanted and safe?")
+# and the verdict recorded — but nothing is stopped (docs/overview.md, Jev idea 5).
+#
+# Shadow first, on purpose: a guard that blocks changes the episode, and its
+# verdicts could then no longer be scored against what the unguarded agent
+# would have done. Once `guard_denials` lines up with the episodes that
+# actually went wrong, switch `mode: enforce` (and `onConfirm: ask` to route
+# the unsure middle to the user) as its own arm.
+#
+# The intents are SYSco Mobile+'s policy-`confirm` set (plan §3.4).
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {backend: ollama, model: qwen3:4b, format: qwen3, keepAlive: 30m}
+  language: auto
+  guard:
+    mode: shadow
+    allowAbove: 0.7
+    denyBelow: 0.3
+    onConfirm: proceed
+    intents: [form.submit, form.discard, form.saveDraft, 'action.invoke', 'time.stop']

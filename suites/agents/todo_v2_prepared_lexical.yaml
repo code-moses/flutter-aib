@@ -1,0 +1,30 @@
+# todo_v2: lexical preparation of the tool catalogue only. The discovery axis
+# needs listing intents named for one app (discoveryKeys); the workspace
+# app's scoped catalogue is exactly what the tools axis cannot fully see.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: lexical
+  prepare: [tools]
+  topK: 5
+  minScore: 0.25
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

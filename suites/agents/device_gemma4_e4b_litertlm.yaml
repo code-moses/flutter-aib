@@ -1,0 +1,28 @@
+# Gemma 4 E4B running inside the app: the same model as local_gemma4_e4b,
+# but as the LiteRT-LM bundle the app loads itself through
+# FlutterEdgeAiRuntime and the product's LocalLlmClient
+# (one JSON decision per call, no native tool loop), instead of
+# Ollama's tool calling over HTTP.
+#
+# `provider: litertlm` is not one the framework's client factory builds: the
+# SYSco live harness recognises it (m5_live_benchmark_test.dart, _onDevice)
+# and `model` names the file under ~/Downloads/aib-models.
+# litert-community/gemma-4-E4B-it-litert-lm, gemma-4-E4B-it.litertlm (3.66 GB).
+#
+# Compare against local_gemma4_e4b: what changes is the runtime and the
+# decision format, so the delta is the on-device path as the product ships it.
+llm:
+  provider: litertlm
+  model: gemma-4-E4B-it.litertlm
+  contextTokens: 16384
+
+agent:
+  maxCompletionTokens: 1024
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

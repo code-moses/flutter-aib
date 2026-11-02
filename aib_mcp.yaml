@@ -1,0 +1,66 @@
+# The aib MCP server (docs/overview.md, "The MCP server"). Paths are relative to
+# this file. Machine-local settings — where an app repository lives, a model
+# host on another port — go in aib_mcp.local.yaml (git-ignored), which is
+# merged over this file; aib_mcp.local.yaml.example shows the SYSco recipe.
+root: .
+# Directories tools may write to; everything else under root is read-only.
+writable: [suites/agents/experiments, experiments, results]
+derive:
+  # Config paths one derived arm may change. One change per arm is what makes
+  # a comparison attributable; a whole added block counts as one.
+  maxChangedPaths: 1
+
+# How runs start. Template variables: {root} {home} {agentConfigPath}
+# {agentConfigName} {agentConfigFile} {agent} {reps} {tasks} {seed} {out}
+# {outDir} {suitePath} {suitesDir} {otel} {otelCaptureContent}; an unset one
+# expands to "".
+runners:
+  mock:
+    kind: inProcess          # `aib run --env mock` in an isolate of the server
+    environment: mock
+    maxMinutes: 30
+  todo_v2:
+    suite: todo_v2
+    cwd: apps/todo_app
+    command: [fvm, flutter, test, test/benchmark/live/v2_live_benchmark_test.dart]
+    env:
+      AIB_AGENT: '{agentConfigPath}'
+      AIB_AGENTS: '{agent}'
+      AIB_REPS: '{reps}'
+      AIB_TASKS: '{tasks}'
+      AIB_OUT: '{outDir}'
+      # Set when the run exports OpenTelemetry spans (the UI's Launch page, or
+      # `otel` of aib_run_start); empty otherwise.
+      AIB_OTEL: '{otel}'
+      AIB_OTEL_CAPTURE_CONTENT: '{otelCaptureContent}'
+
+# What can run at the same time: one live run per GPU, so latency metrics
+# compare. A local model URL no host names is limited to one run as well.
+hosts:
+  ollama: {url: 'http://localhost:11434', concurrency: 1}
+
+# Spend on priced models. Local models are `nominal` in the price table and
+# cost nothing here.
+budget:
+  maxUsdPerJob: 10.00
+  maxUsdPerDay: 20.00
+  autoApproveUsd: 0          # every priced run needs a person's yes
+  priceTable: suites/pricing_2026_09.yaml
+
+# The judge each suite is scored with — fixed here, so a tuning agent cannot
+# pick a lenient one.
+judges:
+  todo_v2: ollama_judge
+  todo_v1: ollama_judge
+
+# Holdout splits of the suites, relative to root (suites/splits/<suite>.yaml).
+splits: suites/splits
+
+# Streamable HTTP (`--http`), for a benchmark machine others reach. The
+# bearer token is read from $AIB_MCP_TOKEN (at least 16 characters), never
+# from this file. Bind 0.0.0.0 only on purpose.
+http:
+  host: 127.0.0.1
+  port: 8765
+  path: /mcp
+  allowedOrigins: []

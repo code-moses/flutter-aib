@@ -1,0 +1,43 @@
+# Condition E: preparation by dense retrieval over a pinned embedding model.
+#
+# The arm that can cross a language boundary. This instance's data is German
+# and its intent catalogue is English, which term matching scores at zero
+# however good the BM25 implementation is; a multilingual encoder puts both in
+# one space. `nomic-embed-text` is multilingual and runs on the same local
+# Ollama as the agent, so the arm needs no key and no second service.
+#
+# The embedding model is pinned in the manifest like every other model, and it
+# must stay out of the judge's family for the same reason the agent does.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+embedding:
+  provider: ollama
+  model: nomic-embed-text
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: vector
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

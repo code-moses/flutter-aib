@@ -1,0 +1,37 @@
+# Derived from experiments/tc_base.yaml by aib_mcp on 2026-09-26 (agent:
+# hybrid).
+#
+# Hypothesis: A worked call in the framework's own tool descriptions
+# (describe_intents, ask_user, done) and up to three example calls in each
+# described intent's tool description improve argument shape and
+# describe-in-one-call behaviour. Shows as fewer describe_intents calls per
+# episode and fewer bad_params than tc_base; costs tokens in every request
+# while a tool is offered, so tokens_total must be read next to the score.
+#
+# One change against experiments/tc_base.yaml:
+#   agent.examples: (absent) -> {"tools":true,"intents":true}
+#
+# agentConfigHash: 34bb1a4b370b0fc4
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  captureModelOutput: true
+  examples:
+    tools: true
+    intents: true
+router:
+  router: union
+  strategies:
+    - intents
+    - genui
+    - user
+    - semantics
+  bootstrap: intents.catalog
+  profile: full

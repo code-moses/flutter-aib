@@ -1,0 +1,24 @@
+# Rubric for todo.dashboard.generate — versioned; never edit in place
+# (add dashboard_v2 instead). Questions are closed and literal on purpose:
+# narrow rubrics keep the LLM judge reliable (spec §12 risk table).
+rubric: dashboard_v1
+criteria:
+  - id: all_open_tasks
+    question: >
+      Does the surface contain an item for every one of the 7 open tasks
+      ("Steuererklärung abgeben", "Zahnarzttermin vereinbaren",
+      "Projektbericht schreiben", "Blumen gießen", "Reifen wechseln",
+      "Geschenk besorgen", "Wäsche waschen")?
+    weight: 2
+  - id: no_completed_tasks
+    question: >
+      Does the surface avoid listing completed tasks ("Einkauf erledigt",
+      "Anmeldung gesendet", "Obsolete Aufgabe")?
+  - id: grouped_by_due
+    question: >
+      Are the items organized into sections whose grouping is recognizably
+      based on due date (e.g. overdue / per date / without due date)?
+  - id: nothing_invented
+    question: >
+      Does the surface avoid inventing tasks that are not in the data
+      context?

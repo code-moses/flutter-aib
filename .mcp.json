@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aib": {
+      "command": "fvm",
+      "args": ["dart", "run", "packages/aib_mcp/bin/server.dart", "--config", "aib_mcp.yaml"]
+    }
+  }
+}

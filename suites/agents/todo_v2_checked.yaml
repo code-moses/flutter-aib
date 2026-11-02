@@ -1,0 +1,35 @@
+# todo_v2: todo_v2_prepared_lexical.yaml plus a completion check (see
+# hybrid_union_checked.yaml). One change: the `decisions:` block.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {backend: ollama, model: qwen3:4b, format: qwen3, keepAlive: 30m}
+  language: auto
+  maxStateChars: 6000
+  completionCheck: {threshold: 0.5, maxRejections: 1}
+
+preparation:
+  strategy: lexical
+  prepare: [tools]
+  topK: 5
+  minScore: 0.25
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

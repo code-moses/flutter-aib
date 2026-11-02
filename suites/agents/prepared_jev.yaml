@@ -1,0 +1,56 @@
+# Condition J: the preparation of prepared_lexical.yaml, with a decision model
+# choosing instead of BM25 (docs/overview.md, Jev ideas 4 and 5).
+#
+# One change per arm would be `strategy` alone. This file changes three keys
+# that only mean something together, so read it against prepared_lexical as
+# "the jev preparer" rather than as a single-key ablation:
+#
+# - strategy: jev — a noul "this is needed for the task" per catalogue intent,
+#   per configured listing and per listing row. Absolute threshold, so the
+#   preparer can decide that nothing is relevant, which BM25's relative cut
+#   cannot;
+# - discoveryQuery: none — the whole listing, because the decision model
+#   picks the rows itself and narrowing by the task's longest word would hide
+#   a synonym it could have matched;
+# - escapeHatchScope: relevant — intents judged unrelated are listed by name
+#   only ("ignore irrelevant tools" without making them unreachable).
+#
+# The decision model is qwen3:4b through Ollama's logprobs (aib_jev), next to
+# the qwen3:8b agent: ~50–80 ms per branch warm, one branch per candidate.
+# Its spend is a side call (side_call_latency_ms); add --metrics decisions.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {backend: ollama, model: qwen3:4b, format: qwen3, keepAlive: 30m}
+  language: auto
+  selection: {threshold: 0.5}
+
+preparation:
+  strategy: jev
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  discoveryQuery: none
+  escapeHatchScope: relevant
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

@@ -1,0 +1,34 @@
+# local_gemma4_26b with one change: agent.compaction.
+# Old turns become a summary instead of being
+# stubbed by the observation window alone. Measured on todo_v2's longer
+# episodes (the bulk and ambiguous tasks pass 6 results); the SYSco tuning
+# tasks rarely do.
+#
+# Compare against local_gemma4_26b on the same tasks: success, tokens per
+# episode, wall clock, and side_call_cost of the summaries.
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  # One tool call per turn: the loop executes queued calls back to back
+  # without the model seeing the results in between (F13).
+  parallelToolCalls: false
+  # Keep the last 8 tool results in full, stub the rest. Without this a long
+  # episode on a real app ends in a context-length abort that looks exactly
+  # like the agent giving up (F3).
+  observationWindow: 8
+  # Once more than 6 tool results are uncompacted, all but the last 3 are
+  # folded into one model-written summary (a side call on the same model).
+  # The window still bounds what compaction keeps.
+  compaction: {after: 6, keep: 3, maxSummaryTokens: 400}
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

@@ -1,0 +1,44 @@
+# prepared_hybrid.yaml against a frontier model.
+#
+# Identical to suites/agents/prepared_hybrid.yaml except for the llm block, so a
+# comparison with the local run moves the model and nothing else: same
+# preparer, same topK, same budget, same router. Paired with
+# hybrid_union_sonnet.yaml, it asks whether preparation still pays when the
+# model is good enough to route a full catalogue itself.
+#
+# The key is never in this file. It arrives as a compile-time define:
+#   --dart-define=ANTHROPIC_API_KEY=...
+llm:
+  provider: anthropic
+  model: claude-sonnet-5
+  apiKeyEnv: ANTHROPIC_API_KEY
+
+embedding:
+  provider: ollama
+  model: nomic-embed-text
+
+agent:
+  maxCompletionTokens: 2048
+  # Sonnet 5 rejects `temperature` outright (HTTP 400), so it must not be sent.
+  supportsTemperature: false
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: hybrid
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  rrfK: 60
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

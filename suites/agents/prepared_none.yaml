@@ -1,0 +1,25 @@
+# Condition B of the preparation sweep: the prepared agent preparing nothing.
+#
+# The control that separates "preparation helped" from "the new prompt helped".
+# Everything except `preparation:` is hybrid_union.yaml verbatim, so A vs B
+# moves the prompt alone and B vs C-G moves the preparer alone.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: none

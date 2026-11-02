@@ -1,0 +1,18 @@
+name: aib_otel
+description: >-
+  AI Interaction Benchmark — OpenTelemetry exporter: episode traces as GenAI
+  semantic-convention spans. Opt-in; aib_core does not depend on it.
+version: 1.0.0
+repository: https://github.com/code-moses/flutter-aib/tree/main/packages/aib_otel
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  aib_core: ^1.0.0
+  dartastic_opentelemetry: ^0.11.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

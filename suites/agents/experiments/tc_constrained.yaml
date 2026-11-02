@@ -1,0 +1,34 @@
+# Derived from experiments/tc_base.yaml by aib_mcp on 2026-09-26 (agent:
+# hybrid).
+#
+# Hypothesis: Decoding under a schema that admits only calls to the offered
+# tools removes empty turns, unparseable arguments and calls to unoffered
+# tools. Shows as fewer no_usable_response / empty-response aborts and fewer
+# unknown-tool errors than tc_base; it will not by itself reduce guessed ids,
+# so score gain is expected only where those failures were the binding ones.
+#
+# One change against experiments/tc_base.yaml:
+#   agent.toolCalling: (absent) -> "constrained"
+#
+# agentConfigHash: 34bb1a4b370b0fc4
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  captureModelOutput: true
+  toolCalling: constrained
+router:
+  router: union
+  strategies:
+    - intents
+    - genui
+    - user
+    - semantics
+  bootstrap: intents.catalog
+  profile: full

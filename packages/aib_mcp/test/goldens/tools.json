@@ -1,0 +1,845 @@
+[
+  {
+    "name": "aib_compare",
+    "description": "Two runs: paired deltas with 95% bootstrap CIs. Three or more: a sweep ranked on a cost-accuracy frontier. Refused when the manifests differ in more than `vary` names.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Run directory relative to the checkout, as aib_list_runs names it."
+          },
+          "minItems": 2
+        },
+        "vary": {
+          "type": "array",
+          "description": "Manifest paths allowed to differ, as dotted-path globs (`agents.*.metadata.model`, or `model`).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Metric providers to add (see aib_metrics_catalog).",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "runs"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_derive_agent_config",
+    "description": "Derive a new arm from `base` with a JSON merge patch (RFC 7386) and write it to suites/agents/experiments/<name>.yaml with a header naming the base, the change and the hypothesis. Refused when the patch changes more than one config path (a whole added block counts as one), when the result does not build, or when the name exists.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "string",
+          "description": "Config name of the arm to start from."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        },
+        "patch": {
+          "type": "object",
+          "description": "JSON merge patch; null removes a key.",
+          "properties": {},
+          "additionalProperties": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the new arm (lowercase, digits, _ . -)."
+        },
+        "hypothesis": {
+          "type": "string",
+          "description": "What the change should do, and which metric would show it."
+        }
+      },
+      "required": [
+        "base",
+        "agent",
+        "patch",
+        "name",
+        "hypothesis"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_describe_run",
+    "description": "A run: manifest, config blocks, judge, and which episodes are done, faulted, truncated or missing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        }
+      },
+      "required": [
+        "run"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_describe_suite",
+    "description": "A suite's tasks: id, title, instruction, tags, language, budget, optimalSteps. No ground truth.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        }
+      },
+      "required": [
+        "suite"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_diff_agent_configs",
+    "description": "Differences between two arms: by config path, and the manifest paths `aib_compare` would need in `vary` for runs of them.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string",
+          "description": "Config name."
+        },
+        "b": {
+          "type": "string",
+          "description": "Config name."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        }
+      },
+      "required": [
+        "a",
+        "b",
+        "agent"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_doctor",
+    "description": "Preflight: suite loads, Ollama up with the pinned models, API keys present (reported as present or not, never their value).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        },
+        "configs": {
+          "type": "array",
+          "description": "Agent config names to check.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "judge": {
+          "type": "string",
+          "description": "Judge config name."
+        }
+      }
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_evaluate",
+    "description": "Score a run: aggregates, per-episode verdicts. Without `judge`, rubric verdicts are reused from verdicts.json and nothing is written; a run that needs a judge and has none stored is refused. With `judge: true` the run is scored by the judge pinned for its suite, as a job (see aib_job_status); a priced judge needs maxUsd.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Metric providers to add (see aib_metrics_catalog).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "judge": {
+          "type": "boolean",
+          "description": "Score with the suite's pinned judge (a job)."
+        },
+        "maxUsd": {
+          "type": "number",
+          "description": "Spend cap for a priced judge."
+        }
+      },
+      "required": [
+        "run"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_holdout_score",
+    "description": "Score an arm on the suite's holdout: a person approves every call, the arm runs on the held-out tasks as a job, and only the suite-level score comes back. The call and the score are journaled to the open study.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "string",
+          "description": "Config name of the arm."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        },
+        "runner": {
+          "type": "string",
+          "description": "Runner recipe."
+        },
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        },
+        "reps": {
+          "type": "integer",
+          "description": "Repetitions per task."
+        },
+        "maxUsd": {
+          "type": "number",
+          "description": "Spend cap for priced models."
+        }
+      },
+      "required": [
+        "config",
+        "agent",
+        "runner"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_job_cancel",
+    "description": "Stop a job. A cancelled run keeps its directory; start it again with the same `out` to resume.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "type": "string",
+          "description": "Job id."
+        }
+      },
+      "required": [
+        "job"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_job_log",
+    "description": "The last lines of a job's output.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "type": "string",
+          "description": "Job id."
+        },
+        "tail": {
+          "type": "integer",
+          "description": "Lines (default 50)."
+        }
+      },
+      "required": [
+        "job"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_job_status",
+    "description": "A job: state, episodes done of planned, spend, run directory, error, and its result once finished.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "type": "string",
+          "description": "Job id."
+        }
+      },
+      "required": [
+        "job"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_job_wait",
+    "description": "Wait until a job ends or `seconds` pass (default 60, at most 600), sending progress notifications meanwhile.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "type": "string",
+          "description": "Job id."
+        },
+        "seconds": {
+          "type": "integer",
+          "description": "How long to wait."
+        }
+      },
+      "required": [
+        "job"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_jobs",
+    "description": "Every job of this server, newest first, and the configured runners and hosts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_list_agent_configs",
+    "description": "Agent configs (arms) with their header comment, blocks and hash. Derived arms are named experiments/<name>.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "string",
+          "description": "Substring to match anywhere in the entry."
+        }
+      }
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_list_runs",
+    "description": "Run directories under results/ and experiments/, newest first: suite, agents, repetitions, trace count, whether evaluated.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "suite": {
+          "type": "string",
+          "description": "Suite name as the manifest records it."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Substring of an agent id."
+        },
+        "since": {
+          "type": "string",
+          "description": "ISO date; runs created before it are left out."
+        }
+      }
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_list_suites",
+    "description": "Task suites with task counts, tags, languages and criterion kinds.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_metrics_catalog",
+    "description": "Every metric: name, unit, source (builtin or the provider that adds it), description.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "description": "Only these providers (and builtin).",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_provenance",
+    "description": "What a run was, in the fields that decide whether another compares with it; with `against`, what differs.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "against": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        }
+      },
+      "required": [
+        "run"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_read_agent_config",
+    "description": "One agent config: its YAML, the parsed config, and per-block hashes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Config name as aib_list_agent_configs names it."
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_replay_thresholds",
+    "description": "Replay a decision threshold from a recorded run instead of re-running it. `route` is exact and needs the always-local and always-cloud runs that price each route. `completion`, `guard` and `select-*` are counterfactual, first decision only: episodes where a decision would have gone the other way are counted, not scored.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "decision": {
+          "type": "string",
+          "description": "route, completion, guard, select-tools, select-listings, select-rows or select-*."
+        },
+        "thresholds": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1
+        },
+        "local": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "cloud": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        }
+      },
+      "required": [
+        "run",
+        "decision",
+        "thresholds"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_report",
+    "description": "Render reports into the run directory (md, json, csv, html) and return the Markdown report.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "formats": {
+          "type": "array",
+          "description": "Default: md.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Metric providers to add (see aib_metrics_catalog).",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "run"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_route",
+    "description": "Score routing deciders against the per-task oracle of an always-local and an always-cloud run, split by language.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "local": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "cloud": {
+          "type": "string",
+          "description": "Run directory relative to the checkout, as aib_list_runs names it."
+        },
+        "routed": {
+          "type": "array",
+          "description": "Routed arms to score.",
+          "items": {
+            "type": "string",
+            "description": "Run directory relative to the checkout, as aib_list_runs names it."
+          }
+        }
+      },
+      "required": [
+        "local",
+        "cloud"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_run_estimate",
+    "description": "What a run would take: episodes, model hosts, priced models, and — from earlier runs of the same arm, or of its base — tokens, cost range and wall clock.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "runner": {
+          "type": "string",
+          "description": "Runner recipe from aib_mcp.yaml (aib_jobs lists them)."
+        },
+        "config": {
+          "type": "string",
+          "description": "Agent config name, as aib_list_agent_configs names it."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        },
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        },
+        "reps": {
+          "type": "integer",
+          "description": "Repetitions per task (default: the suite's)."
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Only these task ids (app runners).",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "runner",
+        "config",
+        "agent"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_run_start",
+    "description": "Start a run as a job and return its id at once. Runs on the same model host queue behind each other. Naming an existing `out` resumes that run (complete episodes are reused). Priced models need maxUsd, an estimate under it and, above the auto-approve limit, a yes from the person at the client.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "runner": {
+          "type": "string",
+          "description": "Runner recipe from aib_mcp.yaml (aib_jobs lists them)."
+        },
+        "config": {
+          "type": "string",
+          "description": "Agent config name, as aib_list_agent_configs names it."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        },
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        },
+        "reps": {
+          "type": "integer",
+          "description": "Repetitions per task (default: the suite's)."
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Only these task ids (app runners).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Task shuffle seed (in-process runners)."
+        },
+        "maxUsd": {
+          "type": "number",
+          "description": "Spend cap; the job stops when it is reached."
+        },
+        "out": {
+          "type": "string",
+          "description": "Run directory name under results/; an existing one is resumed."
+        }
+      },
+      "required": [
+        "runner",
+        "config",
+        "agent"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_selftest",
+    "description": "Check a suite's oracles on the mock environment: each reference must pass, stopping at once must not.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        },
+        "reference": {
+          "type": "string",
+          "description": "Reference trajectories (ScriptedAgent config), path relative to the checkout."
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Only these task ids.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "suite"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_study",
+    "description": "Open a tuning study (experiments/<name>/journal.jsonl), or reopen one. Derived arms, runs, comparisons, replays and holdout scores of this session are journaled to it with their hypotheses; comparisons report how many arms the study has tried.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Study name (lowercase, digits, _ . -)."
+        },
+        "hypothesis": {
+          "type": "string",
+          "description": "What the study sets out to show; required for a new study."
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_sweep_start",
+    "description": "Sweep one config path over `values`: derives one arm per value from `base` (a value equal to the base uses the base), runs each on the tuning split, scores them with the pinned judge where the suite needs one, and finishes with a comparison of all arms. Returns the sweep job; the run jobs queue on their model host.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "string",
+          "description": "Config name of the arm to sweep from."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        },
+        "path": {
+          "type": "string",
+          "description": "Dotted config path, e.g. preparation.topK."
+        },
+        "values": {
+          "type": "array",
+          "description": "Values for the path (JSON).",
+          "minItems": 2
+        },
+        "runner": {
+          "type": "string",
+          "description": "Runner recipe."
+        },
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        },
+        "reps": {
+          "type": "integer",
+          "description": "Repetitions per task."
+        }
+      },
+      "required": [
+        "base",
+        "agent",
+        "path",
+        "values",
+        "runner"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "aib_validate_agent_config",
+    "description": "Build an agent config without running it: built or the refusal, block hashes, decision model. Pass a config name or inline YAML.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "description": "Agent kind the config is built as: semantics, intent, genui, hybrid or prepared."
+        },
+        "name": {
+          "type": "string",
+          "description": "Config name as aib_list_agent_configs names it."
+        },
+        "yaml": {
+          "type": "string",
+          "description": "Inline config YAML."
+        }
+      },
+      "required": [
+        "agent"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "aib_validate_suite",
+    "description": "Schema check of a suite: errors, warnings, task count, tags, languages.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "suite": {
+          "type": "string",
+          "description": "Suite name as aib_list_suites names it (e.g. \"todo_v2\"), or a .yaml path."
+        }
+      },
+      "required": [
+        "suite"
+      ]
+    },
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  }
+]

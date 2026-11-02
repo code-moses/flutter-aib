@@ -1,0 +1,41 @@
+# Melos configuration (run with a globally activated melos: `dart pub global activate melos`).
+# The repo also works without melos via native pub workspaces (see docs/adr/0001).
+# All SDK calls go through `fvm` so they use the SDK pinned in .fvmrc.
+name: ai_interaction_benchmark
+
+packages:
+  - packages/*
+  - apps/*
+
+command:
+  bootstrap:
+    runPubGetInParallel: false
+
+scripts:
+  analyze:
+    description: Static analysis for all packages.
+    run: fvm dart analyze .
+
+  test:dart:
+    description: Unit tests of the pure Dart packages (Layer 1 + 2 + 4).
+    run: melos exec --dir-exists=test --no-flutter -- fvm dart test
+    packageFilters:
+      flutter: false
+
+  test:flutter:
+    description: Tests of the Flutter packages (Layer 3) and apps.
+    run: melos exec --dir-exists=test --flutter -- fvm flutter test
+    packageFilters:
+      flutter: true
+
+  check:core-deps:
+    description: CI guard — aib_core/aib_protocol must not depend on Flutter (P1).
+    run: bash tool/check_core_deps.sh
+
+  check:app-safe:
+    description: >-
+      CI guard — the entry points an application ships (aib_core/ports.dart,
+      aib_agents/agents.dart, aib_flutter) must stay free of dart:io and the
+      other VM-only libraries.
+    run: fvm dart tool/check_app_safe_entrypoints.dart
+sdkPath: .fvm/flutter_sdk

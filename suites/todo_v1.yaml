@@ -1,0 +1,277 @@
+# Task suite for test application 1 (Todo app, spec §8.1).
+# Fixture: 10 todos — 7 open, 3 completed, 2 open items due before 2026-07-01.
+#
+# optimalSteps = minimal known number of act-envelopes across the reference
+# modalities (usually the intent path; the UI path needs more actions — that
+# asymmetry is exactly what `path_efficiency` is meant to expose).
+#
+suite: todo_v1
+schema: aib-task/1.0
+defaults:
+  repetitions: 5
+  budget:
+    maxSteps: 25
+    maxWallClockSeconds: 180
+    maxTokens: 60000
+  fixture: fixtures/todo_seed_baseline.json
+
+tasks:
+  - id: todo.create.simple
+    title: "Aufgabe erstellen (einfach)"
+    instruction: >
+      Erstelle eine neue Aufgabe mit dem Titel "Milch kaufen"
+      und dem Fälligkeitsdatum 2026-07-10.
+    tags: [crud, create, difficulty:easy]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Milch kaufen')"
+          expect:
+            count: 1
+            fields: { dueDate: "2026-07-10", completed: false }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 1 && fields.dueDate != '2026-07-10'"
+        credit: 0.5
+        label: "Task angelegt, Datum falsch"
+
+  - id: todo.create.full
+    title: "Aufgabe erstellen (mit Notiz)"
+    instruction: >
+      Erstelle eine neue Aufgabe "Paket abholen" mit Fälligkeitsdatum
+      2026-07-12 und der Notiz "Postfiliale 12".
+    tags: [crud, create, difficulty:easy]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Paket abholen')"
+          expect:
+            count: 1
+            fields: { dueDate: "2026-07-12", notes: "Postfiliale 12", completed: false }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 1 && fields.notes != 'Postfiliale 12'"
+        credit: 0.5
+        label: "Task angelegt, Notiz fehlt oder falsch"
+
+  - id: todo.complete.single
+    title: "Aufgabe abschließen"
+    instruction: Markiere die Aufgabe "Steuererklärung abgeben" als erledigt.
+    tags: [crud, update, difficulty:easy]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Steuererklärung abgeben')"
+          expect:
+            count: 1
+            fields: { completed: true }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: todo.rename
+    title: "Aufgabe umbenennen"
+    instruction: >
+      Benenne die Aufgabe "Zahnarzttermin vereinbaren" um in
+      "Zahnarzt: Termin bestätigen". Alle anderen Felder bleiben unverändert.
+    tags: [crud, update, difficulty:medium]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Zahnarzt: Termin bestätigen')"
+          expect:
+            count: 1
+            fields: { dueDate: "2026-07-15", completed: false }
+        - query: "db.todos.where(title == 'Zahnarzttermin vereinbaren')"
+          expect: { count: 0 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: todo.update.duedate
+    title: "Fälligkeitsdatum ändern"
+    instruction: >
+      Verschiebe das Fälligkeitsdatum der Aufgabe "Projektbericht schreiben"
+      auf den 2026-07-20.
+    tags: [crud, update, difficulty:easy]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Projektbericht schreiben')"
+          expect:
+            count: 1
+            fields: { dueDate: "2026-07-20", completed: false }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 1 && fields.dueDate == '2026-07-08'"
+        credit: 0.25
+        label: "Task gefunden, Datum unverändert"
+
+  - id: todo.delete.single
+    title: "Aufgabe löschen (ohne Kollateralschaden)"
+    instruction: Lösche die Aufgabe "Obsolete Aufgabe" — und nur diese.
+    tags: [crud, delete, difficulty:medium]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Obsolete Aufgabe')"
+          expect: { count: 0 }
+        - query: "db.todos"
+          expect: { count: 9 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 0.8
+      - type: traceAssertion
+        weight: 0.2
+        assertions:
+          - { kind: noFailedEnvelopes }
+
+  - id: todo.complete.overdue
+    title: "Überfällige Aufgaben abschließen"
+    instruction: >
+      Markiere alle offenen Aufgaben, die vor dem 2026-07-01 fällig waren,
+      als erledigt.
+    tags: [crud, update, batch, difficulty:hard]
+    optimalSteps: 2
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Blumen gießen')"
+          expect:
+            count: 1
+            fields: { completed: true }
+        - query: "db.todos.where(title == 'Reifen wechseln')"
+          expect:
+            count: 1
+            fields: { completed: true }
+        - query: "db.todos.where(completed == false)"
+          expect: { count: 5 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: todo.delete.completed
+    title: "Erledigte Aufgaben aufräumen"
+    instruction: Lösche alle bereits erledigten Aufgaben.
+    tags: [crud, delete, batch, difficulty:hard]
+    optimalSteps: 3
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(completed == true)"
+          expect: { count: 0 }
+        - query: "db.todos"
+          expect: { count: 7 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  - id: todo.create.duplicate_guard
+    title: "Duplikat vermeiden"
+    instruction: >
+      Stelle sicher, dass eine Aufgabe "Wäsche waschen" existiert.
+      Lege sie nur an, falls sie noch nicht vorhanden ist.
+    tags: [crud, guard, difficulty:medium]
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Wäsche waschen')"
+          expect: { count: 1 }
+        - query: "db.todos"
+          expect: { count: 10 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 2"
+        credit: 0.3
+        label: "Duplikat angelegt"
+
+  # --- Search / filter: no data change, so finalStateMatch is blind here.
+  #     Scored via the milestone timeline (§5.2 stateSequence) plus a
+  #     finalStateMatch that guards against "make it true by deleting rows".
+  - id: todo.search.narrow
+    title: "Liste auf eine Aufgabe einschränken"
+    instruction: >
+      Sorge dafür, dass in der Aufgabenliste nur noch die Aufgabe
+      "Reifen wechseln" angezeigt wird. Verändere dabei keine Aufgabe.
+    tags: [search, view, difficulty:medium]
+    optimalSteps: 1
+    groundTruth:
+      milestones:
+        - id: only-reifen-visible
+          query: "view.visible"
+          expect:
+            count: 1
+            fields: { title: "Reifen wechseln" }
+      finalState:
+        - query: "db.todos"
+          expect: { count: 10 }
+        - query: "db.todos.where(completed == true)"
+          expect: { count: 3 }
+    successCriteria:
+      - type: stateSequence
+        weight: 0.8
+      - type: finalStateMatch
+        weight: 0.2
+
+  - id: todo.filter.open
+    title: "Nur offene Aufgaben anzeigen"
+    instruction: >
+      Stelle die Aufgabenliste so ein, dass ausschließlich die offenen
+      Aufgaben angezeigt werden — ohne Suchtext und ohne Datenänderung.
+    tags: [filter, view, difficulty:medium]
+    optimalSteps: 1
+    groundTruth:
+      milestones:
+        - id: filter-open
+          query: "view.state.where(filter == 'open')"
+          expect: { count: 1, fields: { search: "" } }
+        - id: seven-visible
+          query: "view.visible"
+          expect: { count: 7 }
+      finalState:
+        - query: "db.todos"
+          expect: { count: 10 }
+    successCriteria:
+      - type: stateSequence
+        weight: 0.8
+        ordered: false        # both facts describe one state, not a path
+      - type: finalStateMatch
+        weight: 0.2
+
+  - id: todo.dashboard.generate
+    title: "Dashboard erzeugen"
+    instruction: >
+      Erstelle eine Übersicht über alle offenen Aufgaben,
+      gruppiert nach Fälligkeit.
+    tags: [genui, difficulty:medium]
+    optimalSteps: 1
+    groundTruth:
+      artifact:
+        kind: genui.surface
+        assertions:
+          - "surface enthält alle 7 offenen Tasks"
+          - "Gruppierung nach Fälligkeitsdatum erkennbar"
+    successCriteria:
+      - type: artifactRubric          # LLM-as-Judge, k=3 majority (§5.2)
+        rubric: rubrics/dashboard_v1.yaml
+        # The envelope whose payload is judged: named by the suite, because
+        # the core knows no environment's keys (ADR 0002).
+        artifactKey: genui.render
+        # Pinned judge model (§5.1): `aib evaluate --judge` refuses any other
+        # judge. Changing this line changes the suite hash, so a switched
+        # judge is always visible in the run manifest.
+        #
+        # A *local* judge (suites/agents/ollama_judge.yaml) keeps the whole
+        # evaluation reproducible without an API account, and deliberately a
+        # different model family than the reference agents — a judge sharing
+        # the agent's weights tends to prefer its own output (reported as
+        # judgeAgentOverlap in every report). Its reliability is not assumed:
+        # calibrate it against manual labels and report Cohen's κ
+        # (`tool/genui_label_sheet.py` + `aib calibrate`).
+        judgeModel: gpt-oss:20b
+        weight: 1.0

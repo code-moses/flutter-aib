@@ -1,0 +1,41 @@
+{
+  "db": {
+    "settings": {"today": "2026-07-01", "defaultProjectId": "p-privat"},
+    "projects": [
+      {"id": "p-arbeit", "name": "Arbeit", "archived": false},
+      {"id": "p-privat", "name": "Privat", "archived": false},
+      {"id": "p-haushalt", "name": "Haushalt", "archived": false},
+      {"id": "p-urlaub", "name": "Urlaub 2026", "archived": false},
+      {"id": "p-umzug", "name": "Umzug", "archived": false},
+      {"id": "p-alt", "name": "Altprojekt", "archived": true}
+    ],
+    "todos": [
+      {"id": "w-01", "projectId": "p-arbeit", "title": "Projektbericht schreiben", "dueDate": "2026-07-08", "notes": "Kapitel 3 fehlt", "completed": false, "priority": "high", "tags": ["Bericht"], "subtasks": []},
+      {"id": "w-02", "projectId": "p-arbeit", "title": "Folien für Kickoff", "dueDate": "2026-06-25", "notes": null, "completed": false, "priority": "high", "tags": ["Meeting"], "subtasks": []},
+      {"id": "w-03", "projectId": "p-arbeit", "title": "Reisekosten abrechnen", "dueDate": "2026-06-20", "notes": null, "completed": false, "priority": "normal", "tags": ["Finanzen"], "subtasks": []},
+      {"id": "w-04", "projectId": "p-arbeit", "title": "Arzt anrufen", "dueDate": "2026-07-03", "notes": "Betriebsarzt, Untersuchung", "completed": false, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-05", "projectId": "p-arbeit", "title": "Protokoll verschicken", "dueDate": "2026-06-18", "notes": null, "completed": true, "priority": "normal", "tags": ["Meeting"], "subtasks": []},
+      {"id": "w-06", "projectId": "p-privat", "title": "Steuererklärung abgeben", "dueDate": "2026-07-04", "notes": null, "completed": false, "priority": "high", "tags": ["Finanzen"], "subtasks": []},
+      {"id": "w-08", "projectId": "p-privat", "title": "Arzt anrufen", "dueDate": "2026-06-29", "notes": "Hausarzt, Rezept", "completed": false, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-09", "projectId": "p-privat", "title": "Zahnarzttermin vereinbaren", "dueDate": "2026-07-15", "notes": null, "completed": false, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-10", "projectId": "p-privat", "title": "Anmeldung gesendet", "dueDate": "2026-06-10", "notes": null, "completed": true, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-07", "projectId": "p-haushalt", "title": "Geschenk besorgen", "dueDate": "2026-07-30", "notes": null, "completed": false, "priority": "low", "tags": ["Einkauf"], "subtasks": []},
+      {"id": "w-11", "projectId": "p-haushalt", "title": "Reifen wechseln", "dueDate": "2026-06-20", "notes": "Werkstatt anrufen", "completed": false, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-12", "projectId": "p-haushalt", "title": "Blumen gießen", "dueDate": "2026-06-28", "notes": null, "completed": false, "priority": "low", "tags": [], "subtasks": []},
+      {"id": "w-13", "projectId": "p-haushalt", "title": "Milch kaufen", "dueDate": null, "notes": null, "completed": false, "priority": "low", "tags": ["Einkauf"], "subtasks": []},
+      {"id": "w-14", "projectId": "p-haushalt", "title": "Waschmittel kaufen", "dueDate": "2026-07-02", "notes": null, "completed": false, "priority": "low", "tags": ["Einkauf"], "subtasks": []},
+      {"id": "w-15", "projectId": "p-haushalt", "title": "Einkauf erledigt", "dueDate": "2026-06-15", "notes": null, "completed": true, "priority": "normal", "tags": ["Einkauf"], "subtasks": []},
+      {"id": "w-16", "projectId": "p-haushalt", "title": "Keller aufräumen", "dueDate": "2026-06-15", "notes": null, "completed": false, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-17", "projectId": "p-urlaub", "title": "Urlaub buchen", "dueDate": "2026-07-10", "notes": null, "completed": false, "priority": "high", "tags": [], "subtasks": [
+        {"id": "s-01", "title": "Flüge vergleichen", "done": false},
+        {"id": "s-02", "title": "Hotel reservieren", "done": false},
+        {"id": "s-03", "title": "Mietwagen prüfen", "done": true}
+      ]},
+      {"id": "w-18", "projectId": "p-urlaub", "title": "Reisepass verlängern", "dueDate": "2026-06-30", "notes": null, "completed": false, "priority": "high", "tags": ["Behörde"], "subtasks": []},
+      {"id": "w-19", "projectId": "p-umzug", "title": "Kartons packen", "dueDate": "2026-05-20", "notes": null, "completed": true, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-20", "projectId": "p-umzug", "title": "Nachsendeauftrag stellen", "dueDate": "2026-05-25", "notes": null, "completed": true, "priority": "normal", "tags": ["Behörde"], "subtasks": []},
+      {"id": "w-21", "projectId": "p-alt", "title": "Alte Website abschalten", "dueDate": "2026-03-01", "notes": null, "completed": true, "priority": "normal", "tags": [], "subtasks": []},
+      {"id": "w-22", "projectId": "p-alt", "title": "Domain kündigen", "dueDate": "2026-04-01", "notes": null, "completed": false, "priority": "normal", "tags": [], "subtasks": []}
+    ]
+  }
+}

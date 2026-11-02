@@ -1,0 +1,35 @@
+# Intents alone, with a preparation pass in front of the loop.
+#
+# The single-strategy counterpart of prepared_lexical.yaml: same preparer, same
+# budget, but the loop is offered the intent tools only. It separates "the
+# preparer found the right intents" from "the model recovered through
+# semantics when it did not" — a hybrid can fall back, this cannot.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, user]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: lexical
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

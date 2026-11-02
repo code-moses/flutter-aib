@@ -1,0 +1,37 @@
+name: todo_app
+description: >-
+  AIB test application 1 — Todo app under controlled conditions (spec §8.1).
+  Semantics quality variants via --dart-define=SEMANTICS_QUALITY=good|bad;
+  full intent API parallel to the UI (parity through a shared use-case layer).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  aib_core: ^1.0.0
+  aib_flutter: ^1.0.0
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  aib_agents: ^1.0.0
+  # todo_v2: agents built from suites/agents/*.yaml through the same registry
+  # `aib run` uses, so every configured arm (hybrid, prepared_*) can run here.
+  aib_cli: ^1.0.0
+  # AIB_OTEL: the live run exports its episodes as spans (docs/overview.md).
+  aib_otel: ^1.0.0
+  # M6: the external Python agent attaches over the stdio wire protocol.
+  aib_protocol: ^1.0.0
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  path: ^1.9.0
+  # Live benchmark runner reads the same declarative LLM configs as the CLI
+  # (suites/agents/*.yaml).
+  yaml: ^3.1.3
+
+flutter:
+  uses-material-design: true

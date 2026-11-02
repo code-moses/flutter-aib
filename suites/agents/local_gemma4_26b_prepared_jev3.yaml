@@ -1,0 +1,64 @@
+# local_gemma4_26b_prepared_jev2 with what its run left open
+# (results/tsurf-local_gemma4_26b_prepared_jev2/RUN.md, 29/30 but not faster:
+# 9.6 s first call, ~9.9k-token first prompt, a redundant describe turn).
+#
+# Changes in the layout, the prompt and the selection's size; model, decider,
+# selection prompt, discovery and budgets are those of prepared_jev2:
+# - layout: sharedListing — the envelope listing (~1k tokens, the same for
+#   every task) moves into the system message, before the per-task tools, so
+#   it is restored instead of prefilled; and the escape hatch no longer lists
+#   the prepared intents as "not callable yet";
+# - prompt prepared_v5 — prepared_v1 with a preparation paragraph that says
+#   the prepared intents are tools already and need no describe_intents
+#   (30 of jev2's 36 describe turns named only prepared intents);
+# - minKeep 4, maxKeep 5 (was 5, none) — fewer full-schema tools in the first
+#   prompt. On the 18 labelled tuning tasks (results/jev-probe, hosted
+#   jev-preview, call_rubric_state_v1) floor 4 + cap 5 + references kept every
+#   needed intent with 7.2 intents on average, against 8.4.
+#
+# Compare against local_gemma4_26b_prepared_jev2, local_gemma4_26b and
+# local_gemma4_26b_fixed.
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  prompt: prepared_v5
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {baseUrl: https://api.typesafe.ai, model: jev-preview}
+  language: auto
+  selection:
+    threshold: 0.5
+    minKeep: 4
+    maxKeep: 5
+    prompt: call_rubric_state_v1
+    expand: references
+
+preparation:
+  strategy: jev
+  prepare: [tools, discovery]
+  topK: 12
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  discoveryQuery: none
+  escapeHatchScope: relevant
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true
+  preparedHint: true
+  layout: sharedListing

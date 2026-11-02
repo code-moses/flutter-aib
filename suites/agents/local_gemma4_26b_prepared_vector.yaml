@@ -1,0 +1,54 @@
+# The prepared arm with a local prefilter: local_gemma4_26b_prepared_jev3 with
+# the decision model replaced by an embedding ranking.
+# Hosted Jev selects in ~0.75 s per task; a local Jev
+# through Ollama took 12–23 s, too slow to prefilter. A 300M embedding model
+# ranks the 27 intents in ~0.1 s on the same machine.
+#
+# Chosen offline on the 18 labelled tuning tasks (results/embed-probe-2026-10-17):
+# embeddinggemma, raw text (its query/document prefixes lowered recall),
+# top 5 + references kept every needed intent on 14/17 tasks (recall 0.91,
+# 7.4 intents); nomic-embed-text reached 0.25 at top 5. Ollama has no
+# EmbeddingGemma 2 tag yet; this is EmbeddingGemma (v1, 300M).
+#
+# Changes against prepared_jev3: no decisions block; strategy vector with
+# embedding embeddinggemma; topK 5; expand: references; minScore 0 (the cut is
+# the top 5 alone). Model, layout, prompt, discovery and budgets as jev3.
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+embedding:
+  provider: ollama
+  model: embeddinggemma
+
+agent:
+  prompt: prepared_v5
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: vector
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0
+  expand: references
+  discoveryKeys: [app.forms, app.endpoints]
+  discoveryQuery: none
+  escapeHatchScope: relevant
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true
+  preparedHint: true
+  layout: sharedListing

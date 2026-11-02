@@ -1,0 +1,6 @@
+# Simulated user (I2) for tasks that declare `userSimulator`. A third model
+# family next to the agents' qwen3 and the judge's gpt-oss.
+provider: ollama
+model: llama3.1:8b
+baseUrl: http://localhost:11434
+contextTokens: 8192

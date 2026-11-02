@@ -1,0 +1,35 @@
+# Condition C: preparation by exact term matching. Deterministic, no second
+# model — which is the point: it says how much of any gain is the removal of
+# discovery turns rather than semantic retrieval.
+#
+# `discoveryKeys` are SYSco Mobile+'s listing intents. They are configuration,
+# not framework knowledge: another app names its own.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: rules
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

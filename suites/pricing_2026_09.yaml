@@ -1,0 +1,115 @@
+# Pinned price table for `cost_usd` (spec §6.3), superseding
+# pricing_2026_08.yaml. Never edit a table in place once runs reference it —
+# add pricing_YYYY_MM.
+#
+# New in this table: the cached-prompt and reasoning tiers (plan §17.1 F2).
+# They matter for the SYSco assistant specifically. The intent strategy
+# re-sends its whole capability catalog every turn, which is exactly the
+# shape providers cache; costing those tokens at the full prompt rate would
+# systematically overprice the strategy the plan recommends. A model without
+# a `cachedPromptPerMTok` entry bills cached tokens at the full rate, which
+# is what the older table meant.
+#
+# VERIFY BEFORE THE FINAL RUNS. These have the correct shape and plausible
+# magnitudes; they are not quotes. Azure prices are region-dependent and the
+# EU deployment's actual rates must be read off the customer's own Azure
+# pricing page, not the public US list.
+currency: USD
+asOf: 2026-09-03
+source: provider pricing pages — UNVERIFIED, see header
+
+models:
+  # --- Anthropic ---
+  # Appended 2026-09-06 for the first Sonnet run. Adding a model cannot change
+  # what an earlier run cost — no run referenced this key — so the "never edit
+  # in place" rule above is not in play. Input/output are the published list
+  # rates; the cached tier is deliberately absent, which per the header means
+  # cached tokens bill at the full prompt rate. That over-states cost rather
+  # than under-stating it, and the intent strategy re-sends its catalogue every
+  # turn, so the real bill will be lower than reported until this is verified.
+  # Cache tiers added 2026-09-07, when the Anthropic client started marking
+  # its stable prefix. Editing a referenced table in place is normally
+  # forbidden, and this is the one case where it provably changes nothing: no
+  # archived run contains a single cached or written token (no trace in
+  # results/ carries tokensCachedPrompt or tokensCacheWrite at all), so every
+  # existing cost_usd re-computes to exactly the value it had. The rates are
+  # the standard multipliers on the base rate — 0.1x read, 1.25x write at the
+  # five-minute TTL — and are derived, not quoted. Verify with the rest of
+  # this table before the final runs.
+  claude-sonnet-5:
+    promptPerMTok: 2.0
+    completionPerMTok: 10.0
+    cachedPromptPerMTok: 0.2
+    cacheWritePerMTok: 2.5
+  claude-sonnet-4-6:
+    promptPerMTok: 3.0
+    completionPerMTok: 15.0
+    cachedPromptPerMTok: 0.3
+    cacheWritePerMTok: 3.75
+  claude-opus-4-1:
+    promptPerMTok: 15.0
+    completionPerMTok: 75.0
+    cachedPromptPerMTok: 1.5
+    cacheWritePerMTok: 18.75
+
+  # --- OpenAI ---
+  gpt-4o:
+    promptPerMTok: 2.5
+    completionPerMTok: 10.0
+    cachedPromptPerMTok: 1.25
+
+  # --- Azure OpenAI (EU) ---
+  # Keyed by the *model id*, not the deployment name: a deployment called
+  # "sysco-prod" tells you nothing about what it costs. AzureOpenAiClient
+  # carries modelId for exactly this lookup, so two customers' deployments of
+  # the same model price identically.
+  gpt-4o-2024-11-20:
+    promptPerMTok: 2.75
+    completionPerMTok: 11.0
+    cachedPromptPerMTok: 1.375
+  gpt-4o-mini-2024-07-18:
+    promptPerMTok: 0.165
+    completionPerMTok: 0.66
+    cachedPromptPerMTok: 0.0825
+
+  # Local models cost no API money; listing them at 0 is a statement that
+  # they were priced, not that pricing was forgotten (the metric is null
+  # for models missing from the table).
+  #
+  # `nominal: true` says the zero is about billing and not about cost: a local
+  # model still costs a machine, its power and the wall clock, none of which
+  # is in cost_usd. Unmarked, they win every cost-accuracy frontier by
+  # construction, which is a property of the unit and not a finding.
+  qwen3:8b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  qwen3:4b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  qwen3:1.7b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  qwen3-vl:8b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  llama3.1:8b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  qwen2.5vl:7b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  gpt-oss:20b: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  scripted: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+
+  # --- Decision models (System One / Jev), added 2026-09-23 ---
+  # Read for `side_call_cost_usd`: a router's decider is a call to another
+  # model, priced at that model's rate rather than the episode's. Adding keys
+  # no archived run references cannot change an earlier cost (see the
+  # claude-sonnet-5 note above).
+  #
+  # Decision models return no tokens, so `completionPerMTok` is 0 as a fact
+  # about the model, not as a placeholder.
+  #
+  # `jev-1` covers the hosted releases (`jev-1.13.0` matches by version
+  # suffix). UNVERIFIED like the rest of this table: $0.042/MTok is the
+  # vendor's published beta price.
+  jev-1: {promptPerMTok: 0.042, completionPerMTok: 0.0}
+  # Featherless classifier endpoints, from their model card (beta prices).
+  featherless-ai/RWKV-small-classifier: {promptPerMTok: 0.03, completionPerMTok: 0.0}
+  featherless-ai/RWKV-mid-classifier: {promptPerMTok: 0.10, completionPerMTok: 0.0}
+  featherless-ai/RWKV-std-classifier: {promptPerMTok: 0.20, completionPerMTok: 0.0}
+  featherless-ai/gemma-4-26B-A4B-classifier: {promptPerMTok: 0.28, completionPerMTok: 0.0}
+  featherless-ai/Qwen3.6-35B-A3B-classifier: {promptPerMTok: 0.28, completionPerMTok: 0.0}
+  featherless-ai/Qwen3.8-27B-classifier: {promptPerMTok: 0.30, completionPerMTok: 0.0}
+  # Local simple-jev: nominal, like the Ollama models above — a decision
+  # model on this machine costs wall clock and RAM, not API money.
+  Qwen/Qwen3.5-4B: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}
+  Qwen/Qwen3.5-0.8B: {promptPerMTok: 0.0, completionPerMTok: 0.0, nominal: true}

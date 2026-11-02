@@ -1,0 +1,67 @@
+# local_gemma4_26b_prepared_jev with the fixes from its first run
+# (results/tsurf-local_gemma4_26b_prepared_jev/RUN.md, 19/30): the selection
+# dropped the intents the tasks needed, the model re-described what was already
+# prepared, and every new task's first call was a cold prefill.
+#
+# Changes in the decider, the selection and the layout; model, router,
+# discovery and budgets are those of local_gemma4_26b_prepared_jev:
+# - decider jev-preview instead of jev-latest: the better of the two in the
+#   probe (recall at 0.5 0.94 vs 0.83 with the prompt below);
+# - selection prompt call_rubric_state_v1 instead of needed_v1 ("an assistant
+#   would call it", rubric ends, the task framed as a user's request). Chosen
+#   with jev_probe on the 18 tuning tasks: recall at 0.5 0.52 -> 0.83, AUC
+#   0.87 -> 0.95 on jev-latest (results/jev-probe/hosted-2026-10-15);
+# - minKeep 5: never fewer than the five best intents;
+# - expand: references — the intents a kept intent's summary names (form.open
+#   -> app.forms). Threshold 0.5 + floor 5 + references kept every needed
+#   intent on all 18 tasks, ~8 of 27 intents on average;
+# - topK 12 (was 5), so the expanded selection is not cut again. topK also
+#   caps listing rows; those still pass the decision model's threshold;
+# - preparedHint + layout: shared — the briefing names the prepared tools as
+#   callable, the framework tools go before the prepared intents, the task
+#   line goes last, and the shared prefix is primed between episodes.
+#
+# Compare against local_gemma4_26b_prepared_jev (the same arm before the
+# fixes), local_gemma4_26b and local_gemma4_26b_fixed.
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+decisions:
+  client: {baseUrl: https://api.typesafe.ai, model: jev-preview}
+  language: auto
+  selection:
+    threshold: 0.5
+    minKeep: 5
+    prompt: call_rubric_state_v1
+    expand: references
+
+preparation:
+  strategy: jev
+  prepare: [tools, discovery]
+  topK: 12
+  minScore: 0.25
+  discoveryKeys: [app.forms, app.endpoints]
+  discoveryQuery: none
+  escapeHatchScope: relevant
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true
+  preparedHint: true
+  layout: shared

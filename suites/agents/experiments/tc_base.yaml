@@ -1,0 +1,32 @@
+# Derived from hybrid_union.yaml by aib_mcp on 2026-09-26 (agent: hybrid).
+#
+# Hypothesis: Control for the tool-calling study: hybrid_union with model
+# output captured in the trace. It changes what is written down and nothing
+# the model sees, so its agentConfigHash must equal hybrid_union's and its
+# score is the study's baseline on the new code (one-call-per-turn now
+# enforced for Ollama).
+#
+# One change against hybrid_union.yaml:
+#   agent.captureModelOutput: (absent) -> true
+#
+# agentConfigHash: 34bb1a4b370b0fc4
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  captureModelOutput: true
+router:
+  router: union
+  strategies:
+    - intents
+    - genui
+    - user
+    - semantics
+  bootstrap: intents.catalog
+  profile: full

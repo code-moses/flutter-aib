@@ -1,0 +1,67 @@
+# Model routing (docs/overview.md, Jev idea 1): one decision per episode, on the
+# instruction alone, between the local and the frontier model. A local
+# simple-jev server decides (./tool/jev_server.sh).
+#
+# Everything but `modelRouter:` is shared by both sides, so the loop, prompt,
+# preparer and tools are what the unrouted arms measured and only the model
+# moves. Its reference arms are this same file with `decider: local` and
+# `decider: cloud` — not the older prepared_* runs, whose preparation differs
+# (lexical locally, hybrid on Sonnet). Score routing against the oracle built
+# from those two.
+#
+# Metrics: `aib evaluate --metrics routing` (route_local_share, p(local),
+# decider latency, fallback rate).
+#
+# Keys never live here; the cloud side reads ANTHROPIC_API_KEY as a define:
+#   --dart-define=ANTHROPIC_API_KEY=...
+modelRouter:
+  decider: jev
+  onError: cloud
+  local:
+    provider: ollama
+    model: qwen3:8b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  cloud:
+    provider: anthropic
+    model: claude-sonnet-5
+    apiKeyEnv: ANTHROPIC_API_KEY
+    # Sonnet 5 rejects `temperature` outright; the router drops it for this
+    # side only, the local side keeps temperature 0.
+    supportsTemperature: false
+  jev:
+    baseUrl: http://127.0.0.1:8000
+    model: Qwen/Qwen3.5-4B     # must match JEV_MODEL of the server
+    threshold: 0.5
+    # For the hosted API instead:
+    # baseUrl: https://api.typesafe.ai
+    # apiKeyEnv: TYPESAFE_API_KEY
+
+embedding:
+  provider: ollama
+  model: nomic-embed-text
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: hybrid
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  rrfK: 60
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

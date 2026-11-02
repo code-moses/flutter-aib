@@ -1,0 +1,34 @@
+# local_gemma4_26b with one change: agent.warmPrefix.
+# The standard (promoted) tool surface, the hybrid_v4 prompt and the
+# layout are untouched; what changes is that a new task's first call can
+# restore the shared prefix — system prompt and framework tools, the same on
+# every task — from the checkpoint the prime leaves, where the plain arm
+# restored nothing (cached 0 on every rep-1 first call).
+#
+# Compare against local_gemma4_26b on first_call_ttft_ms, rep 1, interleaved.
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  # One tool call per turn: the loop executes queued calls back to back
+  # without the model seeing the results in between (F13).
+  parallelToolCalls: false
+  # Keep the last 8 tool results in full, stub the rest. Without this a long
+  # episode on a real app ends in a context-length abort that looks exactly
+  # like the agent giving up (F3).
+  observationWindow: 8
+  # Between episodes, off the clock: prime the system prompt and the first
+  # call's tools (generating nothing), so the next task's first call restores
+  # them instead of prefilling them.
+  warmPrefix: true
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

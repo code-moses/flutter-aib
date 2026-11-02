@@ -1,0 +1,23 @@
+# The offline candidate: qwen3:1.7b — hybrid_union.yaml with a smaller model.
+#
+# Phase 5 step 1 — pick a model on sysco_v1 before touching a phone, because a
+# model that cannot do the task on a workstation will not start to on a device.
+# Everything except `model` is copied from hybrid_union.yaml verbatim, so a
+# comparison against it moves one named variable and nothing else. It ran
+# through the compact profile until that was removed on 2026-09-11.
+llm:
+  provider: ollama
+  model: qwen3:1.7b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog

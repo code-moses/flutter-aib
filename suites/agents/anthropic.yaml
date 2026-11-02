@@ -1,0 +1,5 @@
+# LLM config for the reference agents (--agents semantics=suites/agents/anthropic.yaml).
+# Pin the exact model version before final runs (spec §5.3, RunManifest).
+provider: anthropic
+model: claude-sonnet-4-6
+apiKeyEnv: ANTHROPIC_API_KEY

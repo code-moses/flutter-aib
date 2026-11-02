@@ -1,0 +1,9 @@
+{
+  "db": {
+    "todos": [
+      {"title": "Existing", "completed": false, "dueDate": "2026-07-05"},
+      {"title": "Obsolete", "completed": true, "dueDate": "2026-06-01"},
+      {"title": "Keep me", "completed": false, "dueDate": "2026-08-01"}
+    ]
+  }
+}

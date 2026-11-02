@@ -1,0 +1,4 @@
+tags:
+  live:
+    # Needs a running model server; run with `-t live`.
+    skip: "live backend test — run with: fvm dart test -t live"

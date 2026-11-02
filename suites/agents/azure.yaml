@@ -1,0 +1,28 @@
+# Azure OpenAI (EU region) — the deployment SYSco Mobile+ ships against
+# (plan §7.1, §9). Layered config: `llm:` is the connection, `agent:` is
+# everything that changes what gets measured.
+llm:
+  provider: azure
+  # The resource the customer's Azure subscription hosts. EU region only.
+  resourceUrl: https://REPLACE-ME.openai.azure.com
+  # Azure addresses deployments, not models.
+  deployment: REPLACE-ME
+  # What that deployment actually is — used for pricing and for comparing
+  # against the same model on another provider. Without it, cost_usd is null.
+  modelId: gpt-4o-2024-11-20
+  # Pinned: Azure retires API versions on a published schedule, and a rerun
+  # next year must send what this run sent.
+  apiVersion: "2024-10-21"
+  apiKeyEnv: AZURE_OPENAI_API_KEY
+  retry:
+    maxAttempts: 3
+    timeoutSeconds: 120
+
+agent:
+  maxCompletionTokens: 2048
+  # Reasoning deployments (o-series) reject the temperature parameter
+  # outright. Set this false for those; it is recorded in the manifest,
+  # because "temperature 0" and "whatever the model does" are not the same
+  # experiment.
+  supportsTemperature: true
+  observationWindow: 8

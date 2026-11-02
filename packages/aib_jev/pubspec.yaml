@@ -1,0 +1,19 @@
+name: aib_jev
+description: >-
+  Decision models (System One, Jev) for Dart: typed questions and answers,
+  simple-jev's prompt and scoring, and hosted, self-hosted, Ollama and
+  OpenAI-compatible backends.
+version: 1.0.0
+repository: https://github.com/code-moses/flutter-aib/tree/main/packages/aib_jev
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  aib_core: ^1.0.0
+  http: ^1.2.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

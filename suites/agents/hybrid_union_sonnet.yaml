@@ -1,0 +1,29 @@
+# The reference run: the recommended hybrid against a frontier model.
+#
+# Identical to hybrid_union.yaml except for the llm block, so a comparison with
+# the local models moves the model and nothing else — same router, same
+# strategies, same observation window, same prompt.
+#
+# The key is never in this file. It arrives as a compile-time define, because
+# the app-driven run cannot read the environment:
+#   --dart-define=ANTHROPIC_API_KEY=...
+llm:
+  provider: anthropic
+  model: claude-sonnet-5
+  apiKeyEnv: ANTHROPIC_API_KEY
+
+agent:
+  maxCompletionTokens: 2048
+  # Sonnet 5 rejects `temperature` outright (HTTP 400), so it must not be sent.
+  # The episode is still deterministic in the sense that matters here: the
+  # scripted user and the fixture are fixed, and the manifest records that
+  # sampling was left to the provider.
+  supportsTemperature: false
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

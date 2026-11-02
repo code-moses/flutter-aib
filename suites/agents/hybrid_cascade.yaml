@@ -1,0 +1,30 @@
+# The cascade ablation (plan §6.1): start on intents, escalate to semantics
+# when the environment says the intent could not do it. The comparison
+# partner of hybrid_union — same prompt, same loop, same tools, different
+# routing. That is the only variable.
+llm:
+  provider: ollama
+  model: qwen3:8b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  # One tool call per turn: the loop executes queued calls back to back
+  # without the model seeing the results in between (F13).
+  parallelToolCalls: false
+  # Keep the last 8 tool results in full, stub the rest. Without this a long
+  # episode on a real app ends in a context-length abort that looks exactly
+  # like the agent giving up (F3).
+  observationWindow: 8
+
+router:
+  router: cascade
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  escalation:
+    from: intents
+    to: semantics
+    on: [unsupported, failed]
+  profile: full

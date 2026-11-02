@@ -1,0 +1,95 @@
+# Synthetic demo suite against the built-in MockEnvironment — the M1 setup
+# as a runnable CLI example:
+#   dart run aib_cli:aib run --suite suites/mock_v1.yaml \
+#     --agents scripted=suites/scripts/mock_scripted.yaml \
+#     --env mock --out results/mock-demo
+suite: mock_v1
+schema: aib-task/1.0
+defaults:
+  repetitions: 3
+  budget:
+    maxSteps: 10
+    maxWallClockSeconds: 60
+    maxTokens: 60000
+  fixture: fixtures/mock_seed.json
+
+tasks:
+  - id: mock.create.simple
+    title: "Create entry (simple)"
+    instruction: >
+      Create a new todo titled "Milch kaufen" with due date 2026-07-10.
+    tags: [crud, create, difficulty:easy]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Milch kaufen')"
+          expect:
+            count: 1
+            fields: { dueDate: "2026-07-10", completed: false }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+    partialCredit:
+      - condition: "count == 1 && fields.dueDate != '2026-07-10'"
+        credit: 0.5
+        label: "Task created, wrong date"
+
+  - id: mock.complete.single
+    title: "Complete entry"
+    instruction: Mark the todo "Existing" as completed.
+    tags: [crud, update, difficulty:easy]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Existing')"
+          expect:
+            count: 1
+            fields: { completed: true }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 1.0
+
+  # Essential states (§5.2 stateSequence): "Existing" must be completed
+  # *before* it is deleted. Both episodes — with and without the intermediate
+  # step — end in exactly the same final state, so only the milestone
+  # timeline can tell them apart.
+  - id: mock.archive.then.delete
+    title: "Archive an entry, then delete it"
+    instruction: >
+      Mark the todo "Existing" as completed and delete it afterwards.
+    tags: [crud, sequence, difficulty:medium]
+    optimalSteps: 2
+    groundTruth:
+      milestones:
+        - id: archived
+          query: "db.todos.where(title == 'Existing')"
+          expect:
+            count: 1
+            fields: { completed: true }
+      finalState:
+        - query: "db.todos.where(title == 'Existing')"
+          expect: { count: 0 }
+    successCriteria:
+      - type: stateSequence
+        weight: 0.5
+      - type: finalStateMatch
+        weight: 0.5
+
+  - id: mock.delete.guarded
+    title: "Delete entry without collateral damage"
+    instruction: Delete the todo "Obsolete" — and nothing else.
+    tags: [crud, delete, difficulty:medium]
+    optimalSteps: 1
+    groundTruth:
+      finalState:
+        - query: "db.todos.where(title == 'Obsolete')"
+          expect: { count: 0 }
+        - query: "db.todos"
+          expect: { count: 2 }
+    successCriteria:
+      - type: finalStateMatch
+        weight: 0.8
+      - type: traceAssertion
+        weight: 0.2
+        assertions:
+          - { kind: noFailedEnvelopes }

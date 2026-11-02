@@ -1,0 +1,54 @@
+# routed_jev.yaml with the deterministic baseline decider: long instructions
+# and instructions with the patterns below go to the cloud. Free and
+# instant, so a Jev arm that does not beat it bought a dependency for nothing.
+#
+# The thresholds are a priori, not fitted: tuning them on sysco_v1 would
+# route on the test set. Any fitting belongs on a held-out split.
+modelRouter:
+  decider: rules
+  onError: cloud
+  local:
+    provider: ollama
+    model: qwen3:8b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  cloud:
+    provider: anthropic
+    model: claude-sonnet-5
+    apiKeyEnv: ANTHROPIC_API_KEY
+    supportsTemperature: false
+  rules:
+    maxLocalWords: 30
+    # Conditions, sequences and exceptions, in both languages the suite uses.
+    cloudPatterns:
+      - '\b(unless|then|if|but|only|except)\b'
+      - '\b(falls|wenn|dann|danach|aber|nur|außer|ausser)\b'
+
+embedding:
+  provider: ollama
+  model: nomic-embed-text
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
+
+preparation:
+  strategy: hybrid
+  prepare: [tools, discovery]
+  topK: 5
+  minScore: 0.25
+  rrfK: 60
+  discoveryKeys: [app.forms, app.endpoints]
+  queryParam: query
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

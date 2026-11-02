@@ -1,0 +1,53 @@
+# Derived from routed_v2_jev3.yaml by aib_mcp on 2026-09-23 (agent: prepared).
+#
+# Hypothesis: At jev threshold 0.9925 the router sends the tasks with p(local)
+# below it to the cloud model, as the replay of route-v2-n3-jev3 predicts.
+#
+# One change against routed_v2_jev3.yaml:
+#   modelRouter.jev.threshold: 0.5 -> 0.9925
+#
+# agentConfigHash: 34bb1a4b370b0fc4
+modelRouter:
+  decider: jev
+  onError: cloud
+  local:
+    provider: ollama
+    model: qwen3:1.7b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  cloud:
+    provider: ollama
+    model: qwen3:8b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  jev:
+    backend: ollama
+    model: qwen3:4b
+    format: qwen3
+    keepAlive: "30m"
+    threshold: 0.9925
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+router:
+  router: union
+  strategies:
+    - intents
+    - genui
+    - user
+    - semantics
+  bootstrap: intents.catalog
+  profile: full
+preparation:
+  strategy: lexical
+  prepare:
+    - tools
+  topK: 5
+  minScore: 0.25
+  budget:
+    maxEnvelopes: 4
+    maxBriefingBytes: 4096
+  escapeHatch: true

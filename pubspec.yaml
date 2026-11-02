@@ -1,0 +1,21 @@
+name: aib_workspace
+description: >-
+  AI Interaction Benchmark (AIB) — workspace root of the Dart monorepo.
+  See docs/overview.md and docs/specification.md.
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+workspace:
+  - packages/aib_core
+  - packages/aib_protocol
+  - packages/aib_jev
+  - packages/aib_jev_llama
+  - packages/aib_agents
+  - packages/aib_cli
+  - packages/aib_mcp
+  - packages/aib_ui
+  - packages/aib_otel
+  - packages/aib_flutter
+  - apps/todo_app

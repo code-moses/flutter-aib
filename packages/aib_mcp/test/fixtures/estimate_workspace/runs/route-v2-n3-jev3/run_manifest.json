@@ -1,0 +1,325 @@
+{
+  "aib": "1.0",
+  "runId": "run-2026-09-23T14-24-58.142650",
+  "createdAt": "2026-09-23T14:24:58.145323",
+  "suite": {
+    "name": "todo_v2",
+    "hash": "104e06eeed1f4e02284000f5c3688c851bfe5f3b63ba39d04205408ec726a397",
+    "path": "../../suites/todo_v2.yaml"
+  },
+  "agents": {
+    "prepared": {
+      "agentId": "prepared",
+      "version": "prepared_v1",
+      "description": "LLM reference agent (prepared, prompt prepared_v1)",
+      "metadata": {
+        "model": "qwen3:1.7b|qwen3:8b",
+        "temperature": 0.0,
+        "promptVersion": "prepared_v1",
+        "promptHash": "955fc9df39376dda",
+        "agentConfigHash": "34bb1a4b370b0fc4",
+        "agentConfig": {
+          "maxCompletionTokens": 2048,
+          "temperature": 0.0,
+          "supportsTemperature": true,
+          "parallelToolCalls": false,
+          "observationWindow": 8,
+          "observationStride": 8,
+          "maxUnknownToolRetries": 3,
+          "finishWarningTurns": 2,
+          "retry": {
+            "maxAttempts": 3,
+            "initialBackoffMs": 500,
+            "maxBackoffMs": 30000,
+            "timeoutSeconds": 120
+          }
+        },
+        "configBlocks": {
+          "modelRouter": {
+            "hash": "4535c0cda8f91921",
+            "config": {
+              "decider": "jev",
+              "onError": "cloud",
+              "local": {
+                "provider": "ollama",
+                "model": "qwen3:1.7b",
+                "baseUrl": "http://localhost:11434",
+                "contextTokens": 32768,
+                "think": false
+              },
+              "cloud": {
+                "provider": "ollama",
+                "model": "qwen3:8b",
+                "baseUrl": "http://localhost:11434",
+                "contextTokens": 32768,
+                "think": false
+              },
+              "jev": {
+                "backend": "ollama",
+                "model": "qwen3:4b",
+                "format": "qwen3",
+                "keepAlive": "30m",
+                "threshold": 0.5
+              }
+            }
+          },
+          "preparation": {
+            "hash": "f2b3133da42bcdf6",
+            "config": {
+              "strategy": "lexical",
+              "prepare": [
+                "tools"
+              ],
+              "topK": 5,
+              "minScore": 0.25,
+              "budget": {
+                "maxEnvelopes": 4,
+                "maxBriefingBytes": 4096
+              },
+              "escapeHatch": true
+            }
+          }
+        },
+        "routerConfigHash": "af9b752d3fb7b940",
+        "routerConfig": {
+          "router": "union",
+          "strategies": [
+            "intents",
+            "genui",
+            "user",
+            "semantics"
+          ],
+          "bootstrap": "intents.catalog",
+          "profile": "full"
+        },
+        "catalogSchemaVersion": "3",
+        "preparation": {
+          "strategy": "lexical",
+          "prepare": [
+            "tools"
+          ],
+          "topK": 5,
+          "minScore": 0.25,
+          "queryParam": "query",
+          "budget": {
+            "maxEnvelopes": 4,
+            "maxBriefingBytes": 4096
+          },
+          "escapeHatch": true
+        }
+      }
+    }
+  },
+  "environment": {
+    "id": "todo_workspace",
+    "version": "1.0.0"
+  },
+  "repetitions": 3,
+  "seed": 42,
+  "taskOrder": [
+    "v2.todo.subtask.add",
+    "v2.ambiguous.title",
+    "v2.guardrail.archived",
+    "v2.project.addTodo",
+    "v2.data.overdue",
+    "v2.bulk.overdue.priority",
+    "v2.subtask.toggle",
+    "v2.project.rename",
+    "v2.data.subtasks.open",
+    "v2.todo.move",
+    "v2.bulk.tag.complete",
+    "v2.todo.tag",
+    "v2.project.archive",
+    "v2.settings.deleteCompleted",
+    "v2.settings.defaultProject"
+  ],
+  "platform": {
+    "dartVersion": "3.13.4 (stable) (Tue Sep 15 01:01:15 2026 -0700) on \"macos_arm64\"",
+    "operatingSystem": "macos",
+    "operatingSystemVersion": "Version 27.0 (Build 26A428)"
+  },
+  "frameworkVersion": "unknown",
+  "extra": {
+    "suiteContentHash": "8bddff0a9724b0c48830385f28eaaa6c68ffff2e7e9a16f4c8d2db745f060006",
+    "suiteTaskContent": {
+      "v2.project.addTodo": "581ef6a02e0fa8237155f724e61280273d819507c30e8bd5ea86eda3fcf5845f",
+      "v2.todo.tag": "f0e643aec89177b676c081a02d47bd55b70bcb72526a21056a478e6cc57f99a7",
+      "v2.todo.subtask.add": "9723da1e44eb9b353cb48e9b17e77ba2fc943ab7034d990be9a934f18cfbf6be",
+      "v2.subtask.toggle": "f65d58192720b7b194ed648c49f4180aeaea995e5b7f9a282d2eb261a3310286",
+      "v2.todo.move": "f650a7c78f98d41888d0b674c04c917ffe399edf8cf48c78d51b35c902cde4c9",
+      "v2.project.rename": "3f59cd093127c2f7107ee12dbde5d678269cdc590ef4f198e192c0fe85b6fa25",
+      "v2.project.archive": "2d2fd026a005d5d01a5b5ae6276d8e5d0aac29e395e03932090b0ca447cb82dc",
+      "v2.settings.defaultProject": "6f6f6eed59b75004e86c162bd3d5a08f89d5ca9902e1a4ac99f113d2b73b9599",
+      "v2.settings.deleteCompleted": "d57766bcb25714c004737636830178352ceb0b46738d34b35e470baa796530e2",
+      "v2.bulk.overdue.priority": "d030f0bb55dfcbfa46c4c6a1cb0144b13c9eb63346decdf3fce068a5d53d1bc6",
+      "v2.bulk.tag.complete": "0dde36ffb709549c595f6dbb838dbbf733378b510166211c991038f164881b06",
+      "v2.ambiguous.title": "4d818d1788ce566987a714ea5b5228338549f0ff88405f9bf5fbd5c596f83ca4",
+      "v2.guardrail.archived": "0d7686b5b92fb1f2437d42f2cde7c43d961599d9735dc0341fe4b571c7faa25f",
+      "v2.data.overdue": "df0a85255a3aabf795c983e3c946c4928747c22be7defc36ed49aa3358c7e2b5",
+      "v2.data.subtasks.open": "3977c46fd06a578b0183a9ab2b369ebd0ccba0012b4210a4be7d0d25bcf772e3"
+    },
+    "pricing": {
+      "currency": "USD",
+      "asOf": "2026-09-03",
+      "source": "provider pricing pages — UNVERIFIED, see header",
+      "models": {
+        "claude-sonnet-5": {
+          "promptPerMTok": 2.0,
+          "completionPerMTok": 10.0,
+          "cachedPromptPerMTok": 0.2,
+          "cacheWritePerMTok": 2.5
+        },
+        "claude-sonnet-4-6": {
+          "promptPerMTok": 3.0,
+          "completionPerMTok": 15.0,
+          "cachedPromptPerMTok": 0.3,
+          "cacheWritePerMTok": 3.75
+        },
+        "claude-opus-4-1": {
+          "promptPerMTok": 15.0,
+          "completionPerMTok": 75.0,
+          "cachedPromptPerMTok": 1.5,
+          "cacheWritePerMTok": 18.75
+        },
+        "gpt-4o": {
+          "promptPerMTok": 2.5,
+          "completionPerMTok": 10.0,
+          "cachedPromptPerMTok": 1.25
+        },
+        "gpt-4o-2024-11-20": {
+          "promptPerMTok": 2.75,
+          "completionPerMTok": 11.0,
+          "cachedPromptPerMTok": 1.375
+        },
+        "gpt-4o-mini-2024-07-18": {
+          "promptPerMTok": 0.165,
+          "completionPerMTok": 0.66,
+          "cachedPromptPerMTok": 0.0825
+        },
+        "qwen3:8b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "qwen3:4b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "qwen3:1.7b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "qwen3-vl:8b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "llama3.1:8b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "qwen2.5vl:7b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "gpt-oss:20b": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "scripted": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "jev-1": {
+          "promptPerMTok": 0.042,
+          "completionPerMTok": 0.0
+        },
+        "featherless-ai/RWKV-small-classifier": {
+          "promptPerMTok": 0.03,
+          "completionPerMTok": 0.0
+        },
+        "featherless-ai/RWKV-mid-classifier": {
+          "promptPerMTok": 0.1,
+          "completionPerMTok": 0.0
+        },
+        "featherless-ai/RWKV-std-classifier": {
+          "promptPerMTok": 0.2,
+          "completionPerMTok": 0.0
+        },
+        "featherless-ai/gemma-4-26B-A4B-classifier": {
+          "promptPerMTok": 0.28,
+          "completionPerMTok": 0.0
+        },
+        "featherless-ai/Qwen3.6-35B-A3B-classifier": {
+          "promptPerMTok": 0.28,
+          "completionPerMTok": 0.0
+        },
+        "featherless-ai/Qwen3.8-27B-classifier": {
+          "promptPerMTok": 0.3,
+          "completionPerMTok": 0.0
+        },
+        "Qwen/Qwen3.5-4B": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        },
+        "Qwen/Qwen3.5-0.8B": {
+          "promptPerMTok": 0.0,
+          "completionPerMTok": 0.0,
+          "nominal": true
+        }
+      }
+    },
+    "revisions": {},
+    "warmUpMs": {
+      "prepared": 2028
+    },
+    "models": {
+      "prepared": {
+        "model": "qwen3:1.7b|qwen3:8b",
+        "local": {
+          "provider": "ollama",
+          "model": "qwen3:1.7b",
+          "digest": "8f68893c685c3ddff2aa3fffce2aa60a30bb2da65ca488b61fff134a4d1730e7",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "2.0B",
+            "quantization_level": "Q4_K_M",
+            "context_length": 40960,
+            "embedding_length": 2048
+          }
+        },
+        "cloud": {
+          "provider": "ollama",
+          "model": "qwen3:8b",
+          "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "8.2B",
+            "quantization_level": "Q4_K_M",
+            "context_length": 40960,
+            "embedding_length": 4096
+          }
+        },
+        "decider": "jev",
+        "jev": "qwen3:4b"
+      }
+    }
+  }
+}

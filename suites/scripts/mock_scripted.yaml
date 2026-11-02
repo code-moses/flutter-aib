@@ -1,0 +1,43 @@
+# ScriptedAgent configuration for suites/mock_v1.yaml — deterministic
+# reference episodes (framework validation without an LLM, spec §10).
+agentId: scripted-mock
+scripts:
+  mock.create.simple:
+    - key: state.list
+      kind: observe
+      payload: { path: db.todos }
+      decision: { model: scripted, tokensPrompt: 100, tokensCompletion: 20, llmLatencyMs: 5, llmCalls: 1 }
+    - key: state.insert
+      kind: act
+      payload:
+        path: db.todos
+        item: { title: "Milch kaufen", completed: false, dueDate: "2026-07-10" }
+      decision: { model: scripted, tokensPrompt: 200, tokensCompletion: 30, llmLatencyMs: 7, llmCalls: 1 }
+  mock.complete.single:
+    - key: state.update
+      kind: act
+      payload:
+        path: db.todos
+        where: { title: "Existing" }
+        set: { completed: true }
+  mock.archive.then.delete:
+    - key: state.update
+      kind: act
+      payload:
+        path: db.todos
+        where: { title: "Existing" }
+        set: { completed: true }
+    - key: state.delete
+      kind: act
+      payload:
+        path: db.todos
+        where: { title: "Existing" }
+  mock.delete.guarded:
+    - key: state.list
+      kind: observe
+      payload: { path: db.todos, where: "title == 'Obsolete'" }
+    - key: state.delete
+      kind: act
+      payload:
+        path: db.todos
+        where: { title: "Obsolete" }

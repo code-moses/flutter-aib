@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "todo_app (v1, todo_v1)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "apps/todo_app",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "todo_app workspace (todo_v2)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "apps/todo_app",
+      "program": "lib/main_workspace.dart"
+    },
+    // Just run "fvm dart run aib_ui"
+    {
+      "name": "AIB UI",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "packages/aib_ui",
+      "program": "bin/aib_ui.dart"
+    }
+  ]
+}
