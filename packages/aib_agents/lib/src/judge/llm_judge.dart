@@ -5,14 +5,17 @@ import 'package:aib_core/aib_core.dart';
 import '../llm/llm_client.dart';
 
 /// LLM-backed implementation of the core's [ArtifactJudge] port (oracle 3,
-/// spec §5.2): pinned judge model, temperature 0, structured answers via a
-/// forced tool call. The k=3 majority lives in [ArtifactRubricEvaluator];
-/// this class is a single consultation.
+/// spec §5.2): pinned judge model, structured answers via a forced tool call.
+/// The k=3 majority lives in [ArtifactRubricEvaluator]; this class is a single
+/// consultation, sampled at [defaultTemperature] unless told otherwise so the
+/// k votes can differ (ADR 0008).
 ///
 /// Calibration: judge a manually labelled sample and report Cohen's κ
 /// (Stats.cohensKappa) in the thesis before trusting rubric scores.
 final class LlmJudge implements ArtifactJudge {
-  LlmJudge({required this.client, this.temperature = 0});
+  LlmJudge({required this.client, this.temperature = defaultTemperature});
+
+  static const defaultTemperature = 0.7;
 
   final LlmClient client;
   final double temperature;

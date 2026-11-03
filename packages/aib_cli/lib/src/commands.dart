@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:aib_agents/aib_agents.dart' show CassetteMode;
+import 'package:aib_agents/aib_agents.dart' show CassetteMode, LlmJudge;
 import 'package:aib_core/aib_core.dart' show RegressionGate, RepetitionOrder, ReporterRegistry;
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
@@ -207,8 +207,9 @@ void _addJudgeKOption(ArgParser parser) => parser.addOption(
   'judge-k',
   defaultsTo: '${ScoringOptions.defaultJudgeK}',
   help:
-      'Judge calls per rubric, majority per criterion. At temperature 0 the '
-      'votes are near identical; use k>1 with a judge temperature above 0.',
+      'Judge calls per rubric, majority per criterion. The judge samples at '
+      'temperature ${LlmJudge.defaultTemperature} unless its config sets '
+      '`temperature:`; at 0 the votes are near identical.',
 );
 
 void _addJudgeCassetteOption(ArgParser parser) => parser.addOption(

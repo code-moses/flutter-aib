@@ -67,7 +67,7 @@ void main() {
       expect(answer.rationale, contains('grouped'));
 
       final judgeRequest = llm.requests.single;
-      expect(judgeRequest.temperature, 0);
+      expect(judgeRequest.temperature, LlmJudge.defaultTemperature);
       expect(judgeRequest.tools.map((t) => t.name), ['submit_judgement']);
       // Rubric ids become required schema properties (structured output).
       final schema = asJsonMap(asJsonMap(judgeRequest.tools.single.parameters['properties'])['answers']);

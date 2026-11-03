@@ -167,7 +167,7 @@ final class AibService {
       client: LlmClientFactory.fromConfig(config),
       // `temperature:` at the top of the judge config, or in its `judge:`
       // block; recorded in the provenance either way.
-      temperature: ((asJsonMap(config['judge'])['temperature'] ?? config['temperature']) as num?)?.toDouble() ?? 0,
+      temperature: ((asJsonMap(config['judge'])['temperature'] ?? config['temperature']) as num?)?.toDouble() ?? LlmJudge.defaultTemperature,
     );
   }
 

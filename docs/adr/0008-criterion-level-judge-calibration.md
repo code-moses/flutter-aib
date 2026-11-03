@@ -155,3 +155,11 @@ candidates, the suite whose rubric hashes match the run's judge provenance,
 and the sheet warns when the judge answered a rubric the suite lacks. The
 faithfulness κ is still to be measured
 (`results/judge-calibration-2026-10-28-faith`).
+
+## Amendment 2026-11-03 — the judge samples by default
+
+`LlmJudge` samples at temperature 0.7 unless the judge config sets
+`temperature:`, and `--judge-k` stays 3. At 0 the three votes were near
+identical, so the majority cost three calls and decided nothing. Verdicts
+scored before this date ran at 0 (their `JudgeProvenance` says so) and are
+not comparable criterion by criterion with later ones.
