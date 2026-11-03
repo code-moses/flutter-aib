@@ -1,0 +1,20 @@
+# local_gemma4_26b.yaml with only `agent.toolSurface: full` changed: every
+# intent a tool with its full schema from the first call, no describe_intents.
+llm:
+  provider: ollama
+  model: gemma4:26b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

@@ -1,0 +1,19 @@
+# Qwen3.5-9B (2026-02; vendor BFCL-V4 66.1, TAU2-Bench 79.1) on the default
+# surface. Thinking off, as on every local arm.
+llm:
+  provider: ollama
+  model: qwen3.5:9b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
