@@ -49,6 +49,27 @@ void main() {
       expect(result.payload['width'], 100);
     });
 
+    test('a description is never cut: its entries are tool definitions', () async {
+      final environment = FlutterEnvironment(environmentId: 'test', maxResultBytes: 400);
+      final bridge = IntentBridge();
+      for (var i = 0; i < 30; i++) {
+        bridge.register(_intent('intent.$i', handler: (_) async => null));
+      }
+      bridge.install(environment);
+
+      final result = await environment.handle(
+        Envelope(
+          key: 'intents.describe',
+          kind: .observe,
+          payload: {
+            'names': [for (var i = 0; i < 30; i++) 'intent.$i'],
+          },
+        ),
+      );
+      expect(result.payload['truncated'], isNull);
+      expect(result.payload['intents'], hasLength(30));
+    });
+
     test('without a cap nothing is touched', () async {
       final environment = FlutterEnvironment(environmentId: 'test');
       environment.registerHandler(

@@ -274,6 +274,8 @@ final class IntentBridge {
           if (autoIncluded.isNotEmpty) 'autoIncluded': autoIncluded,
         });
       },
+      // These are tool definitions: a shortened list silently removes tools.
+      cappable: false,
     );
 
     environment.registerHandler(

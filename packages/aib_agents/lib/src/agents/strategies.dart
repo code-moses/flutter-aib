@@ -711,8 +711,18 @@ final class FullSurfaceIntentStrategy extends ToolStrategy {
 
   @override
   List<Envelope> planAfter(Envelope sent, EnvelopeResult result) {
-    if (sent.key != 'intents.catalog' || result.status != .ok) return const [];
-    final names = _names(result.payload['intents']);
+    if (result.status != .ok) return const [];
+    final List<String> names;
+    if (sent.key == 'intents.catalog') {
+      names = _names(result.payload['intents']);
+    } else if (sent.key == 'intents.describe' && result.payload['truncated'] == true) {
+      // An environment that capped the result: describe what it left out.
+      final returned = _names(result.payload['intents']).toSet();
+      names = [for (final raw in sent.payload['names'] as List? ?? const []) '$raw'].where((n) => !returned.contains(n)).toList();
+      if (names.length == (sent.payload['names'] as List).length) return const [];
+    } else {
+      return const [];
+    }
     return names.isEmpty
         ? const []
         : [

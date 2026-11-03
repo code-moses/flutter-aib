@@ -84,6 +84,31 @@ void main() {
       expect(llm.requests, hasLength(1));
     });
 
+    test('a capped description is followed by one for what it left out', () {
+      final strategy = FullSurfaceIntentStrategy();
+      const sent = Envelope(
+        key: 'intents.describe',
+        kind: .observe,
+        payload: {
+          'names': ['data.count', 'form.open', 'nav.open'],
+        },
+      );
+      final capped = EnvelopeResult.ok(const {
+        'intents': [
+          {'name': 'data.count', 'description': 'Count.', 'kind': 'observe'},
+        ],
+        'truncated': true,
+      });
+      final whole = EnvelopeResult.ok(const {
+        'intents': [
+          {'name': 'data.count', 'description': 'Count.', 'kind': 'observe'},
+        ],
+      });
+
+      expect(strategy.planAfter(sent, capped).single.payload['names'], ['form.open', 'nav.open']);
+      expect(strategy.planAfter(sent, whole), isEmpty);
+    });
+
     test('an empty catalog is not described', () async {
       final agent = HybridAgent(
         client: FakeLlmClient(
