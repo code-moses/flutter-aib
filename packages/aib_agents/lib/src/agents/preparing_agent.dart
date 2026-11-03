@@ -65,10 +65,11 @@ final class PreparingAgent extends HybridAgent {
   String get defaultPromptVersion => switch (config.toolSurface) {
     .promoted => 'prepared_v1',
     .fixed => 'prepared_v3',
+    .full => throw ArgumentError('toolSurface full offers every intent already; there is nothing to prepare'),
   };
 
   @override
-  Map<String, String> get promptFamily => Prompts.preparedFamily[config.toolSurface]!;
+  Map<String, String> get promptFamily => Prompts.preparedFamily[config.toolSurface] ?? const {};
 
   bool get _sharedLayout => preparation.isActive && preparation.layout.isShared;
 
@@ -627,6 +628,7 @@ final class PreparingAgent extends HybridAgent {
                 'need to describe_intents, in one call, to read their parameters '
                 'before calling them.',
           ],
+          .full => const <String>[],
         },
         ..._hatchLines(exclude: _sharedListing ? prepared.toSet() : const {}),
       ],

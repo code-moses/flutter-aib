@@ -31,6 +31,12 @@ enum ToolSurface {
   /// that render tools at the top of the prompt (Ollama), where any change to
   /// the tool list re-prefills everything.
   fixed,
+
+  /// Every intent in scope is a tool with its full schema from the first call,
+  /// as an MCP host lists tools; no `describe_intents`. The agent describes the
+  /// catalog itself before the first call. Laid out for the prompt cache like
+  /// [fixed].
+  full,
 }
 
 /// Which worked examples the agent is offered, each switched on separately so
@@ -81,7 +87,7 @@ final class ExamplesConfig {
 ///   maxUnknownToolRetries: 3
 ///   finishWarningTurns: 2
 ///   toolCalling: native            # native | constrained (ADR 0015)
-///   toolSurface: promoted          # promoted | fixed
+///   toolSurface: promoted          # promoted | fixed | full
 ///   prompt: hybrid_v5              # a frozen prompt of the agent's family
 ///   examples: {tools: true, intents: true}
 ///   captureModelOutput: false      # trace what the model wrote (observability)

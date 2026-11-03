@@ -51,6 +51,10 @@ abstract base class ToolStrategy {
   /// See [ToolLoopAgent.pinsResult].
   bool pins(Envelope sent, EnvelopeResult result) => false;
 
+  /// Envelopes to emit after this bootstrap result, still before the first
+  /// model call.
+  List<Envelope> planAfter(Envelope sent, EnvelopeResult result) => const [];
+
   void reset() {}
 }
 
@@ -672,10 +676,110 @@ final class FixedSurfaceIntentStrategy extends ToolStrategy {
   }
 }
 
+/// `agent.toolSurface: full`: the whole catalog as typed tools with full
+/// schemas from the first model call, and no `describe_intents`.
+///
+/// The agent describes every catalog intent as a bootstrap step ([planAfter]);
+/// tools are built as [IntentStrategy] builds them from a description.
+final class FullSurfaceIntentStrategy extends ToolStrategy {
+  FullSurfaceIntentStrategy({ExamplesConfig examples = const ExamplesConfig()}) : _inner = IntentStrategy(examples: examples);
+
+  final IntentStrategy _inner;
+
+  /// Every intent this episode has heard of, for calls by catalog name.
+  final Set<String> _known = {};
+
+  @override
+  String get name => 'intents';
+
+  @override
+  List<LlmTool> get tools => _inner._tools;
+
+  @override
+  Envelope? get bootstrap => _inner.bootstrap;
+
+  @override
+  void reset() {
+    _inner.reset();
+    _known.clear();
+  }
+
+  static List<String> _names(Object? intents) => [
+    for (final raw in intents as List? ?? const [])
+      if (asJsonMap(raw)['name'] case final String name) name,
+  ];
+
+  @override
+  List<Envelope> planAfter(Envelope sent, EnvelopeResult result) {
+    if (sent.key != 'intents.catalog' || result.status != .ok) return const [];
+    final names = _names(result.payload['intents']);
+    return names.isEmpty
+        ? const []
+        : [
+            Envelope(key: 'intents.describe', kind: .observe, payload: {'names': names}),
+          ];
+  }
+
+  @override
+  void onResult(Envelope sent, EnvelopeResult result) {
+    if (result.status == .ok) {
+      _known.addAll(_names(result.payload['intents']));
+      if (asJsonMap(result.payload['capabilities']) case final delta when delta.isNotEmpty) {
+        _known.addAll(_names(delta['added']));
+      }
+    }
+    _inner.onResult(sent, result);
+  }
+
+  @override
+  String? describeResult(Envelope sent, EnvelopeResult result) {
+    if (sent.key == 'intents.describe') {
+      if (result.status != .ok) return null;
+      return jsonEncode({
+        'callable': [for (final name in _names(result.payload['intents'])) IntentStrategy.toolNameFor(name)],
+        'note': 'Each is a tool; its parameters are in its tool definition.',
+      });
+    }
+    if (sent.key == 'intents.catalog') {
+      if (result.status != .ok || result.payload['intents'] is! List) return null;
+      final rest = {...result.payload}..remove('intents');
+      return jsonEncode({
+        ...rest,
+        'note':
+            'The whole catalog. Every intent is a tool (intent "form.set" is the '
+            'tool "intent_form_set") with its description and parameters in its '
+            'tool definition.',
+        'intents': [
+          for (final raw in result.payload['intents'] as List)
+            if (asJsonMap(raw)['name'] case final String name)
+              {
+                'name': name,
+                if (asJsonMap(raw)['kind'] case final Object kind) 'kind': kind,
+                if (asJsonMap(raw)['metadata'] case final Map<String, Object?> m when m.isNotEmpty) 'metadata': m,
+              },
+        ],
+      });
+    }
+    return _inner.describeResult(sent, result);
+  }
+
+  @override
+  Envelope? map(LlmToolCall call) {
+    if (call.name == IntentStrategy.describeTool.name) return null;
+    if (_inner.map(call) case final envelope?) return envelope;
+    // A call by catalog name means that intent.
+    if (!_known.contains(call.name)) return null;
+    return _inner.map(
+      LlmToolCall(id: call.id, name: IntentStrategy.toolNameFor(call.name), arguments: call.arguments, argumentsError: call.argumentsError),
+    );
+  }
+}
+
 /// The intent strategy [config] asks for ([AgentConfig.toolSurface]).
 ToolStrategy intentStrategyFor(AgentConfig config) => switch (config.toolSurface) {
   .promoted => IntentStrategy(examples: config.examples),
   .fixed => FixedSurfaceIntentStrategy(examples: config.examples),
+  .full => FullSurfaceIntentStrategy(examples: config.examples),
 };
 
 /// Answers by rendering a surface rather than by operating the app.

@@ -61,6 +61,7 @@ base class HybridAgent extends ToolLoopAgent {
   String get defaultPromptVersion => switch (config.toolSurface) {
     .promoted => 'hybrid_v4',
     .fixed => 'hybrid_v6',
+    .full => 'hybrid_v8',
   };
 
   /// The frozen prompts `agent.prompt` may name for this agent, under its
@@ -156,6 +157,14 @@ base class HybridAgent extends ToolLoopAgent {
 
   @override
   bool pinsResult(Envelope sent, EnvelopeResult result) => _strategies.values.any((strategy) => strategy.pins(sent, result));
+
+  @override
+  Future<void> onPlanResult(Envelope sent, EnvelopeResult result, String rendered) async {
+    await super.onPlanResult(sent, result, rendered);
+    for (final strategy in _enabled) {
+      enqueuePlan(strategy.planAfter(sent, result));
+    }
+  }
 
   @override
   void onResult(Envelope sent, EnvelopeResult result) {

@@ -298,13 +298,13 @@ abstract base class ToolLoopAgent implements BenchmarkAgent, AgentWarmUp, AgentM
   @override
   void steer(String message, {required String id}) => _steering.add(message);
 
-  /// Under [ToolSurface.fixed] the conversation is laid out for a local
-  /// server's prompt cache: the task line after the bootstrap observations, no
-  /// budget line on plan results.
-  bool get _cachedPrefix => config.toolSurface == .fixed;
+  /// Under [ToolSurface.fixed] and [ToolSurface.full] the conversation is laid
+  /// out for a local server's prompt cache: the task line after the bootstrap
+  /// observations, no budget line on plan results.
+  bool get _cachedPrefix => config.toolSurface != .promoted;
 
   /// Whether the task line goes after the bootstrap observations (or a
-  /// briefing) instead of first. Under [ToolSurface.fixed] always; a subclass
+  /// briefing) instead of first. Under a cached-prefix surface always; a subclass
   /// with its own cache-friendly layout turns it on too.
   bool get taskLineLast => _cachedPrefix;
 

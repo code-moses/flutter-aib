@@ -24,12 +24,14 @@ final class IntentAgent extends ToolLoopAgent {
   String get promptVersion => switch (config.toolSurface) {
     .promoted => 'intent_v3',
     .fixed => 'intent_v4',
+    .full => 'intent_v5',
   };
 
   @override
   String get systemPrompt => switch (config.toolSurface) {
     .promoted => Prompts.intentV3,
     .fixed => Prompts.intentV4,
+    .full => Prompts.intentV5,
   };
 
   /// tool name for an intent name (tool names must be identifier-safe).
@@ -55,6 +57,12 @@ final class IntentAgent extends ToolLoopAgent {
 
   @override
   bool pinsResult(Envelope sent, EnvelopeResult result) => _strategy.pins(sent, result);
+
+  @override
+  Future<void> onPlanResult(Envelope sent, EnvelopeResult result, String rendered) async {
+    await super.onPlanResult(sent, result, rendered);
+    enqueuePlan(_strategy.planAfter(sent, result));
+  }
 
   @override
   Envelope? mapToolCall(LlmToolCall call) => _strategy.map(call);
