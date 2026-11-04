@@ -205,9 +205,9 @@ final class RunCommand extends AibCommand {
 
 void _addJudgeKOption(ArgParser parser) => parser.addOption(
   'judge-k',
-  defaultsTo: '${ScoringOptions.defaultJudgeK}',
   help:
-      'Judge calls per rubric, majority per criterion. The judge samples at '
+      'Judge calls per rubric, majority per criterion; default `k:` of the '
+      'judge config, else ${ScoringOptions.defaultJudgeK}. The judge samples at '
       'temperature ${LlmJudge.defaultTemperature} unless its config sets '
       '`temperature:`; at 0 the votes are near identical.',
 );
@@ -239,8 +239,9 @@ void _addMetricsOption(ArgParser parser) => parser
 /// The scoring options every command that scores a run shares.
 ScoringOptions _scoring(ArgResults args) {
   String? option(String name) => args.options.contains(name) ? args[name] as String? : null;
-  final k = int.tryParse(option('judge-k') ?? '') ?? ScoringOptions.defaultJudgeK;
-  if (k < 1) throw UsageException('--judge-k must be at least 1', '');
+  final raw = option('judge-k');
+  final k = raw == null ? null : int.tryParse(raw);
+  if (raw != null && (k == null || k < 1)) throw UsageException('--judge-k must be at least 1', '');
   return ScoringOptions(
     judge: option('judge'),
     suite: option('suite'),

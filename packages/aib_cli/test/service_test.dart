@@ -46,6 +46,17 @@ void main() {
     });
   });
 
+  group('judgeKFrom', () {
+    test('reads k from the judge config, else the default', () {
+      final withK = File(p.join(tmp.path, 'judge_k1.yaml'))..writeAsStringSync('provider: ollama\nmodel: m\njudge:\n  k: 1\n  temperature: 0\n');
+      final plain = File(p.join(tmp.path, 'judge.yaml'))..writeAsStringSync('provider: ollama\nmodel: m\n');
+      expect(AibService.judgeKFrom(withK.path), 1);
+      expect(AibService.judgeKFrom(plain.path), ScoringOptions.defaultJudgeK);
+      expect(AibService.judgeKFrom(null), ScoringOptions.defaultJudgeK);
+      expect((service.judgeFrom(withK.path)! as dynamic).temperature, 0);
+    });
+  });
+
   group('validateAgentConfig', () {
     test('builds a shipped arm and reports its block hashes', () {
       final check = service.validateAgentConfig(agent: 'prepared', path: p.join(repoRoot, 'suites', 'agents', 'routed_v2_jev3.yaml'));

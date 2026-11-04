@@ -1,0 +1,10 @@
+# ollama_judge with one greedy vote per rubric: cheaper re-scoring when the
+# k=3 sampled votes add little (2026-11 runs). Same model and prompt.
+provider: ollama
+model: gpt-oss:20b
+baseUrl: http://localhost:11434
+contextTokens: 32768
+think: low
+judge:
+  k: 1
+  temperature: 0

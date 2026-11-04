@@ -171,6 +171,13 @@ final class AibService {
     );
   }
 
+  /// `k:` of the judge config (top level or `judge:` block), else the default.
+  static int judgeKFrom(String? configPath) {
+    if (configPath == null) return ScoringOptions.defaultJudgeK;
+    final config = Builtins.loadConfig(configPath);
+    return ((asJsonMap(config['judge'])['k'] ?? config['k']) as num?)?.toInt() ?? ScoringOptions.defaultJudgeK;
+  }
+
   static double _judgeTemperature(ArtifactJudge? judge) => judge is LlmJudge ? judge.temperature : 0;
 
   /// The metric providers [options] name, the conventions first.
@@ -257,7 +264,8 @@ final class AibService {
     ScoringOptions options = const ScoringOptions(),
     WithoutJudge withoutJudge = .reusePersisted,
   }) async {
-    if (options.judgeK < 1) throw const AibError('--judge-k must be at least 1', isUsage: true);
+    final judgeK = options.judgeK ?? judgeKFrom(options.judge);
+    if (judgeK < 1) throw const AibError('--judge-k must be at least 1', isUsage: true);
     final providers = this.providers(options);
     final judge = judgeFrom(options.judge, cassette: options.judgeCassette);
     final warnings = <String>[];
@@ -345,7 +353,7 @@ final class AibService {
     final metrics = MetricsRegistry.builtin(pricing: manifest.pricing, providers: providers);
     final evaluation = RunEvaluation(
       evaluator: EpisodeEvaluator(
-        evaluators: EpisodeEvaluator.defaultEvaluators(judge: judge, judgeRepetitions: options.judgeK, assertions: metrics.assertions),
+        evaluators: EpisodeEvaluator.defaultEvaluators(judge: judge, judgeRepetitions: judgeK, assertions: metrics.assertions),
       ),
       // cost_usd is priced with the table pinned at execution time, so
       // re-evaluating an old run yields the cost it actually had (§6.3).
@@ -365,7 +373,7 @@ final class AibService {
       // Recorded only when a judge actually took part — otherwise the run has
       // no rubric scores to attribute (P6).
       judge: judge != null
-          ? JudgeProvenance.forSuite(suite, judgeId: judge.judgeId, k: options.judgeK, temperature: _judgeTemperature(judge))
+          ? JudgeProvenance.forSuite(suite, judgeId: judge.judgeId, k: judgeK, temperature: _judgeTemperature(judge))
           : persisted.isNotEmpty
           ? store.readJudgeProvenance()
           : null,

@@ -47,15 +47,7 @@ enum WithoutJudge {
 /// What scoring a run needs besides the run: shared by evaluate, report,
 /// compare, route and calibrate.
 final class ScoringOptions {
-  const ScoringOptions({
-    this.judge,
-    this.suite,
-    this.metrics = const [],
-    this.conventions = true,
-    this.judgeK = defaultJudgeK,
-    this.tasks,
-    this.judgeCassette,
-  });
+  const ScoringOptions({this.judge, this.suite, this.metrics = const [], this.conventions = true, this.judgeK, this.tasks, this.judgeCassette});
 
   /// Majority votes per rubric criterion (spec §5.2 default k=3).
   static const defaultJudgeK = 3;
@@ -71,7 +63,9 @@ final class ScoringOptions {
 
   /// Score with the intent/user bridge conventions.
   final bool conventions;
-  final int judgeK;
+
+  /// Null takes `k:` from the judge config, else [defaultJudgeK].
+  final int? judgeK;
 
   /// Only episodes of these tasks; null scores all. The MCP server scores
   /// a tuning agent's runs on the tuning split only.
