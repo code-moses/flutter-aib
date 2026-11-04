@@ -1,0 +1,17 @@
+# device_gemma4_e4b_litertlm_full.yaml with a 32k window: the full catalog is ~10k tokens.
+llm:
+  provider: litertlm
+  model: gemma-4-E4B-it.litertlm
+  contextTokens: 32768
+
+agent:
+  maxCompletionTokens: 1024
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
