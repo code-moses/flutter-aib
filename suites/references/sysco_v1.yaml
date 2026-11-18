@@ -95,7 +95,7 @@ scripts:
   genui.chart.articleKinds:
     - {"key": "genui.catalog", "kind": "observe", "payload": {}}
     - {"key": "genui.describe", "kind": "observe", "payload": {"components": ["Chart"]}}
-    - {"key": "genui.render", "kind": "act", "payload": {"messages": [{"version": "1.0", "createSurface": {"surfaceId": "artikelarten-chart", "catalogId": "https://sysco.at/dynamate/a2ui/v1_0/assistant_catalog.json"}}, {"version": "1.0", "updateComponents": {"surfaceId": "artikelarten-chart", "components": [{"id": "root", "component": "Chart", "title": "Artikel je Artikelart", "chartType": "bar", "endpointId": 10, "groupBy": "Artikelart", "x": "Artikelart", "y": "Count"}]}}]}}
+    - {"key": "genui.render", "kind": "act", "payload": {"messages": [{"version": "1.0", "createSurface": {"surfaceId": "artikelarten-chart", "catalogId": "https://sysco.at/dynamate/a2ui/v1_0/assistant_catalog.json"}}, {"version": "1.0", "updateComponents": {"surfaceId": "artikelarten-chart", "components": [{"id": "root", "component": "Chart", "title": "Artikel je Artikelart", "kind": "bar", "endpointId": 10, "category": "Artikelart"}]}}]}}
     - {"key": "meta.done", "kind": "act", "payload": {"summary": "Balkendiagramm der Artikel je Artikelart angezeigt: Material 27, Lohn 1, Leistung 1, Gerät 1."}}
   # sysco-sonnet5-budgetline-v1/nav.open.list__hybrid__rep1
   nav.open.list:

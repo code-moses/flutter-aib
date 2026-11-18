@@ -393,8 +393,8 @@ tasks:
           - id: chart_component_gerendert
             question: >
               Enthalten die Nachrichten (items) eine createSurface-Nachricht
-              und eine updateComponents-Nachricht, unter deren Komponenten
-              eine vom Typ "Chart" vorkommt (nicht nur Text/Column-Zeilen)?
+              und, in ihr oder in einer updateComponents-Nachricht, eine
+              Komponente vom Typ "Chart" (nicht nur Text/Column-Zeilen)?
             weight: 2
           - id: material_27
             question: >
