@@ -1,3 +1,8 @@
+## 1.1.1
+
+- A missing mandatory option (`aib validate` without `--suite`) is a usage error
+  with exit code 64, instead of an unhandled exception.
+
 ## 1.1.0
 
 - `aib compare --baseline` (`AibService.compareBaseline`): every run against the first, with per-run intervals,

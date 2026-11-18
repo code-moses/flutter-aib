@@ -113,6 +113,17 @@ void main() {
     expect(File(p.join(out, 'sweep.md')).existsSync(), isTrue);
   });
 
+  test('a missing mandatory option is a usage error, not a crash', () async {
+    await expectLater(
+      buildRunner().run(['validate']),
+      throwsA(isA<UsageException>().having((e) => e.message, 'message', 'Missing option --suite.')),
+    );
+    await expectLater(
+      buildRunner().run(['run', '--suite', suitePath]),
+      throwsA(isA<UsageException>().having((e) => e.message, 'message', 'Missing options --agents, --out.')),
+    );
+  });
+
   test('validate accepts the demo suite', () async {
     expect(await buildRunner().run(['validate', '--suite', suitePath]), 0);
   });

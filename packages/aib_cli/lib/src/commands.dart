@@ -43,6 +43,12 @@ abstract base class AibCommand extends Command<int> {
 
   @override
   Future<int> run() async {
+    // `args` throws an ArgumentError when a missing mandatory option is read.
+    final missing = [
+      for (final MapEntry(key: name, value: option) in argParser.options.entries)
+        if (option.mandatory && !args.wasParsed(name)) '--$name',
+    ];
+    if (missing.isNotEmpty) usageException('Missing ${missing.length == 1 ? 'option' : 'options'} ${missing.join(', ')}.');
     try {
       return await execute();
     } on AibError catch (e) {
