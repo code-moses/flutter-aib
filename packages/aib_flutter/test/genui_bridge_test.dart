@@ -25,7 +25,7 @@ void main() {
 
   late GenUiBridge bridge;
 
-  FlutterEnvironment build({void Function(List<JsonMap>)? onMessages}) {
+  FlutterEnvironment build({void Function(List<JsonMap>)? onMessages, Future<GenUiPrepared> Function(List<JsonMap>)? prepare}) {
     final environment = FlutterEnvironment(environmentId: 'test');
     bridge = GenUiBridge(
       dataContextProvider: () async => {
@@ -34,6 +34,7 @@ void main() {
         ],
       },
       onMessages: onMessages,
+      prepare: prepare,
     )..install(environment);
     return environment;
   }
@@ -296,6 +297,85 @@ void main() {
     expect(result.error?.code, 'invalid_surface');
     expect(result.error?.message, contains('child'));
     expect(result.error?.message, contains('required but missing'));
+  });
+
+  test('a host prepare step changes what is shown and adds to the result', () async {
+    List<JsonMap>? shown;
+    final environment = build(
+      onMessages: (messages) => shown = messages,
+      prepare: (messages) async => GenUiPrepared(
+        [
+          messages.first,
+          update(
+            components: [
+              {'id': 'root', 'component': 'Text', 'text': 'resolved by the host'},
+            ],
+          ),
+        ],
+        result: {
+          'refs': ['c1'],
+        },
+      ),
+    );
+    final result = await render(environment, [create(), update()]);
+    expect(result.status, EnvelopeStatus.ok);
+    expect(result.payload, containsPair('refs', ['c1']));
+    expect(result.payload, containsPair('accepted', true));
+    expect(((shown!.last['updateComponents'] as Map)['components'] as List).single, containsPair('text', 'resolved by the host'));
+    expect(bridge.lastMessages, same(shown));
+  });
+
+  test('a prepare step that cannot resolve the batch rejects it, and creates nothing', () async {
+    var notified = false;
+    final environment = build(onMessages: (_) => notified = true, prepare: (_) async => throw const FormatException('no endpoint "Artikl"'));
+    final result = await render(environment, [create(), update()]);
+    expect(result.status, EnvelopeStatus.failed);
+    expect(result.error!.code, 'invalid_surface');
+    expect(result.error!.message, contains('no endpoint "Artikl"'));
+    expect(notified, isFalse);
+    // The surface was not created: a later update to it is refused.
+    final later = await render(environment, [update()]);
+    expect(later.status, EnvelopeStatus.failed);
+    expect(later.error!.message, contains('no createSurface has created'));
+  });
+
+  group('A2UI 1.0', () {
+    FlutterEnvironment buildV1() {
+      final environment = FlutterEnvironment(environmentId: 'test');
+      GenUiBridge(dataContextProvider: () async => {}, catalog: GenUiCatalog.basicNoAssetsV1).install(environment);
+      return environment;
+    }
+
+    JsonMap v1(JsonMap message, [String version = '1.0']) => {...message, 'version': version};
+
+    test('a 1.0 catalog takes 1.0 messages, written either way', () async {
+      for (final version in ['1.0', 'v1.0']) {
+        final result = await render(buildV1(), [
+          v1({
+            'createSurface': {'surfaceId': 'main', 'catalogId': GenUiCatalog.basicV1CatalogId},
+          }, version),
+          v1(update(), version),
+        ]);
+        expect(result.status, EnvelopeStatus.ok, reason: '$version: ${result.error?.message}');
+      }
+    });
+
+    test('a 1.0 catalog refuses v0.9 messages and a v0.9 catalog refuses 1.0 ones', () async {
+      final v09ToV1 = await render(buildV1(), [create(), update()]);
+      expect(v09ToV1.error!.message, contains('version must be "1.0"'));
+      final v1ToV09 = await render(build(), [v1(create()), v1(update())]);
+      expect(v1ToV09.error!.message, contains('version must be "v0.9"'));
+    });
+
+    test('the version is published in the catalog and the render spec', () async {
+      final environment = buildV1();
+      final catalog = await environment.handle(const Envelope(key: 'genui.catalog', kind: .observe));
+      expect(catalog.payload['protocolVersion'], '1.0');
+      final spec = (await environment.describe()).envelopes.firstWhere((e) => e.key == 'genui.render');
+      expect(spec.description, contains('A2UI 1.0'));
+      final items = ((spec.payloadSchema!['properties'] as Map)['messages'] as Map)['items'] as Map;
+      expect((items['properties'] as Map)['version'], {'const': '1.0'});
+    });
   });
 
   test('descriptor publishes the genui keys (discovery)', () async {

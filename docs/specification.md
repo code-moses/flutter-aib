@@ -2,7 +2,7 @@
 
 ## AI Interaction Benchmark Framework für Flutter-Anwendungen
 
-**Arbeitstitel der Masterarbeit:** *Design and Evaluation of a Benchmark Framework for AI-based Interaction with Flutter Applications*
+**Arbeitstitel der Masterarbeit:** *Design and Evaluation of a Benchmark Framework for AI-based Application Interaction*
 
 **Dokumentversion:** 1.0
 

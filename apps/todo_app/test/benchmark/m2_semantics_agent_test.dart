@@ -45,6 +45,8 @@ void main() {
     handle.dispose();
   });
 
+  // Skipped without todo_v1.private.yaml (a public checkout, CI):
+  // todo.complete.single is held out and withheld there.
   testWidgets('good semantics: complete a task by checkbox label', (tester) async {
     final handle = tester.ensureSemantics();
     final harness = await TodoHarness.boot(tester);
@@ -56,7 +58,7 @@ void main() {
     );
     expect(record.verdict.type, VerdictType.success, reason: record.verdict.reason ?? '');
     handle.dispose();
-  });
+  }, skip: suite.taskById('todo.complete.single') == null);
 
   testWidgets('good semantics: delete via labelled delete button', (tester) async {
     final handle = tester.ensureSemantics();

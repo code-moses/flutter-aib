@@ -55,8 +55,36 @@ abstract base class ToolStrategy {
   /// model call.
   List<Envelope> planAfter(Envelope sent, EnvelopeResult result) => const [];
 
+  /// Called at the start of an episode with what the environment offers.
+  void bind(EnvironmentDescriptor environment) {}
+
   void reset() {}
 }
+
+/// The A2UI version the environment's `genui.render` takes; `v0.9` when it
+/// does not say.
+String a2uiVersionOf(EnvironmentDescriptor environment) {
+  final spec = environment.envelopes.where((e) => e.key == 'genui.render').firstOrNull;
+  final messages = asJsonMap(asJsonMap(spec?.payloadSchema?['properties'])['messages']);
+  final version = asJsonMap(asJsonMap(asJsonMap(messages['items'])['properties'])['version'])['const'];
+  return version is String ? version : 'v0.9';
+}
+
+Object? _dialect(Object? json, String version) => switch (json) {
+  final String text => a2uiDialect(text, version),
+  final Map<dynamic, dynamic> map => {for (final entry in map.entries) '${entry.key}': _dialect(entry.value, version)},
+  final List<dynamic> list => [for (final item in list) _dialect(item, version)],
+  _ => json,
+};
+
+/// [text] with its A2UI v0.9 wording rewritten for [version]; unchanged for
+/// v0.9, so prompts and tools keep their hashes.
+String a2uiDialect(String text, String version) => version == 'v0.9'
+    ? text
+    : text
+          .replaceAll('"version": "v0.9"', '"version": "$version"')
+          .replaceAll('{version: "v0.9"}', '{version: "$version"}')
+          .replaceAll('A2UI v0.9', 'A2UI $version');
 
 /// Drives the app through its accessibility tree.
 final class SemanticsStrategy extends ToolStrategy {
@@ -797,8 +825,24 @@ final class GenUiStrategy extends ToolStrategy {
   @override
   String get name => 'genui';
 
+  String _version = 'v0.9';
+
   @override
-  List<LlmTool> get tools => const [
+  void bind(EnvironmentDescriptor environment) => _version = a2uiVersionOf(environment);
+
+  @override
+  List<LlmTool> get tools => _version == 'v0.9'
+      ? _tools
+      : [
+          for (final tool in _tools)
+            LlmTool(
+              name: tool.name,
+              description: a2uiDialect(tool.description, _version),
+              parameters: asJsonMap(_dialect(tool.parameters, _version)),
+            ),
+        ];
+
+  static const _tools = [
     LlmTool(name: 'observe_data', description: 'Re-read the app data context.'),
     LlmTool(
       name: 'observe_ui_catalog',

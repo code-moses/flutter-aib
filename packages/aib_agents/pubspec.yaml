@@ -3,7 +3,7 @@ description: >-
   AI Interaction Benchmark reference agents: an LlmClient port with
   Anthropic, OpenAI and Ollama clients, a tool-calling loop with telemetry,
   Semantics and Intent agents.
-version: 1.0.0
+version: 1.1.0
 repository: https://github.com/code-moses/flutter-aib/tree/main/packages/aib_agents
 resolution: workspace
 
@@ -11,7 +11,7 @@ environment:
   sdk: ^3.12.0
 
 dependencies:
-  aib_core: ^1.0.0
+  aib_core: ^1.1.0
   aib_jev: ^1.0.0
   http: ^1.2.0
 

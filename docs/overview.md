@@ -240,7 +240,12 @@ and tune thresholds. Under both front ends sits `AibService`
 1. An agent that tunes a benchmark it also reports on is overfitting it.
    Every suite with a file in `suites/splits/` has a holdout. Tools see the
    tuning split only. `aib_holdout_score` needs a person's yes every time,
-   through MCP elicitation, and returns the suite level score only.
+   through MCP elicitation, and returns the suite level score only. The held-out
+   tasks' expected results and reference solutions are not published: the suite
+   keeps a stub (`withheld: true`) and the full block lives in the git-ignored
+   `<suite>.private.yaml` next to it, which `SuiteLoader.loadFile` merges back
+   byte for byte (same hashes as before the split). A public checkout loads the
+   suite without them (`packages/aib_mcp/tool/withhold_holdout.dart`).
 2. Every derived arm, run, comparison, replay and holdout score is journaled
    to `experiments/<study>/journal.jsonl`, and a comparison reports how many
    arms its study tried.

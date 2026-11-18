@@ -2,7 +2,7 @@ name: aib_cli
 description: >-
   AI Interaction Benchmark — Layer 4 CLI: aib run | evaluate | validate |
   report.
-version: 1.0.0
+version: 1.1.0
 repository: https://github.com/code-moses/flutter-aib/tree/main/packages/aib_cli
 resolution: workspace
 
@@ -13,8 +13,8 @@ executables:
   aib: aib
 
 dependencies:
-  aib_agents: ^1.0.0
-  aib_core: ^1.0.0
+  aib_agents: ^1.1.0
+  aib_core: ^1.1.0
   aib_otel: ^1.0.0
   args: ^2.7.0
   path: ^1.9.0

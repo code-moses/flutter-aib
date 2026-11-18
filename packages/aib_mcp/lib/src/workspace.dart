@@ -97,7 +97,9 @@ final class AibWorkspace {
     final split = this.split(loaded.name);
     return {
       ...suiteSummaryJson(loaded),
-      if (split != null) 'split': {'tune': loaded.tasks.length - split.holdout.length, 'holdout': split.holdout.length},
+      // Counted from the tasks that loaded: a checkout without the private
+      // file has the held-out tasks withheld, not merely hidden.
+      if (split != null) 'split': {'tune': split.tune(loaded.tasks.map((t) => t.id)).length, 'holdout': split.holdout.length},
       'tasks': [
         for (final task in loaded.tasks)
           if (split == null || !split.holdout.contains(task.id))

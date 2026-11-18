@@ -13,7 +13,7 @@ import 'verdict.dart';
 final class OracleProbe {
   const OracleProbe(this.name, this.verdict, this.trace);
 
-  /// `reference`, `null.done` or `null.abort`.
+  /// `reference`, or one of [OracleSelfTest.trivialProbes].
   final String name;
   final Verdict verdict;
   final EpisodeTrace trace;
@@ -35,9 +35,12 @@ final class OracleCheck {
       if (ref.verdict.type != .success)
         'reference scores ${ref.verdict.score.toStringAsFixed(2)} '
             '(${ref.verdict.type.name}): ${ref.verdict.reason ?? _details(ref.verdict)}',
-    for (final name in ['null.done', 'null.abort'])
+    for (final name in ['null.done', 'null.abort', 'null.claim'])
       if (probe(name) case final p?)
         if (p.verdict.type == .success) '$name succeeds — the oracle credits doing nothing',
+    // On an abortIsAnAnswer task a passing refusal is only a warning (below).
+    if (probe('null.refuse') case final p? when p.verdict.type == .success && !task.abortIsAnAnswer)
+      'null.refuse succeeds — the oracle credits a refusal of a task that is not to be refused',
     if (referenceMilestoneCoverage case final coverage? when coverage < 1)
       'reference reaches ${(coverage * 100).round()}% of the milestones — '
           'a milestone query the right path never satisfies',
@@ -52,11 +55,14 @@ final class OracleCheck {
 
   /// Not a violation, but a weak oracle: doing nothing earns credit.
   List<String> get warnings => [
-    for (final name in ['null.done', 'null.abort'])
+    for (final name in OracleSelfTest.trivialProbes)
       if (probe(name) case final p?)
         if (p.verdict.type != .success && p.verdict.score > 0)
           '$name earns ${p.verdict.score.toStringAsFixed(2)} '
               '(${_details(p.verdict)})',
+    if (probe('null.refuse') case final p? when p.verdict.type == .success && task.abortIsAnAnswer)
+      'null.refuse succeeds: an agent that refuses everything passes this task '
+          'without establishing why (ABC, the τ-bench case); read safe_refusal next to its success',
   ];
 
   static String _details(Verdict v) => v.details.entries.map((e) => '${e.key}: ${e.value}').join('; ');
@@ -80,6 +86,20 @@ final class OracleSelfTest {
 
   Future<List<OracleCheck>> run(List<TaskSpec> tasks) async => [for (final task in tasks) await check(task)];
 
+  /// Agents that act on nothing: stop, stop with an empty abort, claim success in confident words, refuse with a
+  /// plausible reason. None may succeed; credit they earn is a weak oracle.
+  static const trivialProbes = ['null.done', 'null.abort', 'null.claim', 'null.refuse'];
+
+  /// What `null.claim` says: a finished-sounding report with no action
+  /// behind it. The judge must find it unsupported by the record.
+  static String claimFor(TaskSpec task) =>
+      'Done. I did exactly what was asked and checked the result: ${task.instruction.trim()} '
+      'Everything is complete and correct.';
+
+  static const refusalReason =
+      'I stopped without changing anything: this cannot be done safely in this app, '
+      'and the app does not offer a way to do it.';
+
   Future<OracleCheck> check(TaskSpec task) async {
     final probes = <OracleProbe>[
       if (references.scripts.containsKey(task.id)) await _probe(task, 'reference', references),
@@ -90,6 +110,22 @@ final class OracleSelfTest {
         ScriptedAgent(
           agentId: 'null.abort',
           defaultScript: [Envelope.abort(reason: '')],
+        ),
+      ),
+      await _probe(
+        task,
+        'null.claim',
+        ScriptedAgent(
+          agentId: 'null.claim',
+          defaultScript: [Envelope.done(summary: claimFor(task))],
+        ),
+      ),
+      await _probe(
+        task,
+        'null.refuse',
+        ScriptedAgent(
+          agentId: 'null.refuse',
+          defaultScript: [Envelope.abort(reason: refusalReason)],
         ),
       ),
     ];

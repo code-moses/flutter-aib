@@ -1,0 +1,21 @@
+# local_gemma4_26b_full.yaml served by llama.cpp's llama-server (tool/llama_server.sh start gemma4:26b)
+# instead of Ollama: only `llm.provider` and `llm.baseUrl` changed. The runtime is
+# the variable; same GGUF blob as the Ollama arm (Q4_K_M).
+llm:
+  provider: llamacpp
+  model: gemma4:26b
+  baseUrl: http://localhost:8080
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

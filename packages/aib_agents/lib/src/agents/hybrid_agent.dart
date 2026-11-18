@@ -109,7 +109,9 @@ base class HybridAgent extends ToolLoopAgent {
   @override
   Future<void> startEpisode(TaskSpec task, EnvironmentDescriptor environment) async {
     for (final strategy in _strategies.values) {
-      strategy.reset();
+      strategy
+        ..reset()
+        ..bind(environment);
     }
     _activeStrategy = router.escalateFrom;
     _route = null;

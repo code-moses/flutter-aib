@@ -1,0 +1,23 @@
+# hybrid_union_sonnet.yaml with only `agent.toolSurface: full` changed: every
+# intent a tool with its full schema from the first call, no describe_intents.
+#
+# The key is never in this file. It arrives as a compile-time define:
+#   --dart-define=ANTHROPIC_API_KEY=...
+llm:
+  provider: anthropic
+  model: claude-sonnet-5
+  apiKeyEnv: ANTHROPIC_API_KEY
+
+agent:
+  maxCompletionTokens: 2048
+  # Sonnet 5 rejects `temperature` outright (HTTP 400), so it must not be sent.
+  supportsTemperature: false
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

@@ -137,6 +137,17 @@ void main() {
       expect(sweep, isA<SweepComparison>());
       expect(((roundTrip(sweep.toJson()) as Map)['points'] as List).map((pt) => (pt as Map)['label']), ['a', 'b', 'c']);
     });
+
+    test('--baseline tests every run against the first', () async {
+      final dirs = [
+        for (final name in ['base', 'b', 'c']) await run(name),
+      ];
+      final outcome = await service.compareBaseline(dirs);
+      final json = roundTrip(outcome.toJson()) as Map;
+      expect(json['baseline'], 'base');
+      expect((json['deltas'] as List).map((d) => (d as Map)['run']).toSet(), {'b', 'c'});
+      expect(outcome.markdown, contains('Bonferroni interval for 2 comparison(s)'));
+    });
   });
 
   test('route scores the oracle and refuses without the routing provider', () async {

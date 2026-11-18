@@ -3,7 +3,7 @@ description: >-
   AI Interaction Benchmark — the aib CLI over MCP (docs/overview.md):
   a fourth front end over Layer 4 that lets an agent configure, run and score
   benchmarks.
-version: 1.0.0
+version: 1.1.0
 repository: https://github.com/code-moses/flutter-aib/tree/main/packages/aib_mcp
 resolution: workspace
 
@@ -14,9 +14,9 @@ executables:
   server: server
 
 dependencies:
-  aib_agents: ^1.0.0
-  aib_cli: ^1.0.0
-  aib_core: ^1.0.0
+  aib_agents: ^1.1.0
+  aib_cli: ^1.1.0
+  aib_core: ^1.1.0
   args: ^2.7.0
   crypto: ^3.0.6
   # Pinned exactly: the transport sits in front of the CLI and measures

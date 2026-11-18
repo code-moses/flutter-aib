@@ -13,6 +13,7 @@ aib run      --suite suites/mock_v1.yaml --agents scripted=suites/scripts/mock_s
 aib evaluate --run results/demo
 aib report   --run results/demo --format md,csv,json,html,junit
 aib compare  --runs results/A --runs results/B --out results/
+aib compare  --baseline --runs results/A --runs results/B --runs results/C   # each against A, corrected
 aib gate     --baseline results/A --run results/B    # exit 1 on a regression
 ```
 

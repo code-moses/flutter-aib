@@ -1,0 +1,35 @@
+# sysco_v1 routing arm (run 6): decider `self`, local = Qwen3.6-35B-A3B on Ollama, cloud = Sonnet 5.
+#
+# Both sides run the full tool surface, as in the always-local reference
+# (ext-local_qwen3_6_35b_a3b_full-tune-n3) and the always-cloud reference
+# (ext-hybrid_union_sonnet_full-tune-n3). Score with
+#   aib route --local results/ext-local_qwen3_6_35b_a3b_full-tune-n3 \
+#     --cloud results/ext-hybrid_union_sonnet_full-tune-n3 --routed results/<this run>
+# The two routed_sysco_* files differ only in `modelRouter.decider`.
+modelRouter:
+  decider: self
+  onError: cloud
+  local:
+    provider: ollama
+    model: qwen3.6:35b-a3b
+    baseUrl: http://localhost:11434
+    contextTokens: 32768
+    think: false
+  cloud:
+    provider: anthropic
+    model: claude-sonnet-5
+    apiKeyEnv: ANTHROPIC_API_KEY
+    # Sonnet 5 rejects `temperature` (HTTP 400); the local side keeps T=0.
+    supportsTemperature: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

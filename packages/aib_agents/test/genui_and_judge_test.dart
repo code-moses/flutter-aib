@@ -181,6 +181,7 @@ void main() {
       final answer = await LlmJudge(client: llm).judge(request());
       expect(answer.answers, isEmpty);
       expect(answer.rationale, contains('no structured answer'));
+      expect(answer.formatFailure, isTrue);
     });
 
     test('full pipeline: rubric evaluator + LlmJudge over a real trace shape', () async {

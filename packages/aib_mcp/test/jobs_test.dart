@@ -269,7 +269,8 @@ void main() {
     );
     final runs = launcher(root: root.path);
     final estimate = runs.estimate(configName: 'routed_v2_jev3', agent: 'prepared', suite: 'todo_v2', reps: 1);
-    expect(estimate['episodes'], 16);
+    // Every task that loads: 16, or fewer where the held-out ones are withheld.
+    expect(estimate['episodes'], SuiteLoader.loadFile(p.join(root.path, 'suites', 'todo_v2.yaml')).suite!.tasks.length);
     expect((estimate['basis'] as Map)['runs'], ['results/route-v2-n3-jev3']);
     expect((estimate['basis'] as Map)['episodes'], 3);
     expect(estimate['wallClockMinutes'], isPositive);

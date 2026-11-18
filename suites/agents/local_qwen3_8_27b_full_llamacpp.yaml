@@ -1,0 +1,22 @@
+# local_gemma4_26b_full_llamacpp.yaml with only `llm.model` changed: Qwen3.8-27B
+# (dense, unsloth UD-Q4_K_M GGUF) on llama-server (tool/llama_server.sh start
+# qwen3.8:27b). Thinking is switched off per request, as for every local arm.
+# No Ollama twin: Ollama does not ship this model.
+llm:
+  provider: llamacpp
+  model: qwen3.8:27b
+  baseUrl: http://localhost:8080
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

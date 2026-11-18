@@ -20,6 +20,14 @@ final class _ScriptedJudge implements ArtifactJudge {
   }
 }
 
+final class _UnreadableJudge implements ArtifactJudge {
+  @override
+  String get judgeId => 'unreadable-judge';
+
+  @override
+  Future<JudgeAnswer> judge(JudgeRequest request) async => const JudgeAnswer(answers: {}, formatFailure: true);
+}
+
 const _rubricJson = {
   'rubric': 'dashboard_v1',
   'criteria': [
@@ -100,6 +108,22 @@ void main() {
     // complete (weight 2) passes 2/3, grouped fails 1/3 -> 2/3 of weight.
     expect(verdict.type, VerdictType.partial);
     expect(verdict.score, closeTo(2 / 3, 1e-9));
+  });
+
+  test('an unreadable judge answer is recorded, not passed off as a "no"', () async {
+    final verdict = await judgeWith(_UnreadableJudge());
+    expect(verdict.type, VerdictType.failure);
+    final detail = verdict.details.values.single as Map;
+    expect(detail[judgeFormatFailuresKey], 3);
+  });
+
+  test('a readable answer records no format failure', () async {
+    final verdict = await judgeWith(
+      _ScriptedJudge([
+        {'complete': true, 'grouped': true},
+      ]),
+    );
+    expect((verdict.details.values.single as Map).containsKey(judgeFormatFailuresKey), isFalse);
   });
 
   test('no artifact in trace -> failure with reason', () async {

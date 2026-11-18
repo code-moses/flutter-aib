@@ -89,6 +89,7 @@ fvm dart run aib_cli:aib run      --suite suites/mock_v1.yaml \
 fvm dart run aib_cli:aib evaluate --run results/demo   # add --judge suites/agents/anthropic.yaml for genui tasks
 fvm dart run aib_cli:aib report   --run results/demo --format md,csv,json,html,junit
 fvm dart run aib_cli:aib compare  --runs results/A --runs results/B --out results/
+fvm dart run aib_cli:aib compare  --baseline --runs results/A --runs results/B --runs results/C   # each against A
 fvm dart run aib_cli:aib gate     --baseline results/A --run results/B   # exit 1 on a regression (CI)
 fvm dart run aib_cli:aib calibrate --run results/demo --labels labels.csv
 fvm dart run aib_cli:aib selftest --suite suites/mock_v1.yaml \

@@ -132,36 +132,18 @@ tasks:
         weight: 1.0
 
   - id: v2.subtask.toggle
-    requiredTools: [todo.open, todo.toggleSubtask]
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Teilaufgabe abhaken"
     instruction: >
       Hake bei der Aufgabe "Urlaub buchen" die Teilaufgabe
       "Flüge vergleichen" ab.
     tags: [scope:todo, update, difficulty:easy, lang:de]
-    optimalSteps: 2
-    groundTruth:
-      finalState:
-        - query: "db.subtasks.where(id == 's-01')"
-          expect: { count: 1, fields: { done: true } }
-        - query: "db.subtasks.where(todoId == 'w-17' && done == true)"
-          expect: { count: 2 }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
 
   - id: v2.todo.move
-    requiredTools: [todo.open, todo.move]
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Aufgabe verschieben"
     instruction: Verschiebe die Aufgabe "Geschenk besorgen" ins Projekt "Privat".
     tags: [scope:todo, update, difficulty:easy, lang:de]
-    optimalSteps: 2
-    groundTruth:
-      finalState:
-        - query: "db.todos.where(id == 'w-07')"
-          expect: { count: 1, fields: { projectId: "p-privat", completed: false } }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
 
   - id: v2.project.rename
     requiredTools: [project.open, project.rename]
@@ -263,33 +245,12 @@ tasks:
         label: "Eine von drei hochgestuft"
 
   - id: v2.bulk.tag.complete
-    requiredTools: [todo.find, todo.open, todo.complete]
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Alle Einkäufe abhaken"
     instruction: >
       Markiere alle offenen Aufgaben mit dem Schlagwort "Einkauf" als
       erledigt.
     tags: [scope:todo, update, bulk, difficulty:hard, lang:de]
-    optimalSteps: 6
-    groundTruth:
-      mustNotChange:
-        - "db.todos.where(id != 'w-07' && id != 'w-13' && id != 'w-14')"
-      milestones:
-        - id: einer_erledigt
-          query: "db.todos.where(completed == true && (id == 'w-07' || id == 'w-13' || id == 'w-14'))"
-          expect: { count: 1 }
-      finalState:
-        - query: "db.todos.where(completed == true && (id == 'w-07' || id == 'w-13' || id == 'w-14'))"
-          expect: { count: 3 }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
-    partialCredit:
-      - condition: "count == 2"
-        credit: 0.6
-        label: "Zwei von drei erledigt"
-      - condition: "count == 1"
-        credit: 0.3
-        label: "Einer von drei erledigt"
 
   - id: v2.ambiguous.title
     requiredTools: [todo.find, todo.open, todo.complete]
@@ -342,53 +303,16 @@ tasks:
 
   # ----------------------------------------------------------------- data --
   - id: v2.data.overdue
-    requiredTools: [todo.stats]
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Überfällige zählen"
     instruction: >
       Wie viele Aufgaben sind überfällig, und in welchem Projekt sind es
       die meisten?
     tags: [data, aggregation, difficulty:medium, lang:de]
-    optimalSteps: 1
-    requiredFacts: ["Haushalt"]
-    groundTruth:
-      mustNotChange: ["db.todos", "db.projects", "db.settings"]
-      artifactRubric:
-        criteria:
-          - id: sieben
-            question: "Nennt die Antwort 7 überfällige Aufgaben?"
-            weight: 2
-          - id: haushalt
-            question: >
-              Nennt die Antwort "Haushalt" als das Projekt mit den meisten
-              (3) überfälligen Aufgaben?
-    successCriteria:
-      - type: artifactRubric
-        artifactKey: meta.done
-        judgeModel: gpt-oss:20b
-        weight: 1.0
 
   - id: v2.data.subtasks.open
-    requiredTools: [todo.open]
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Offene Teilaufgaben nennen"
     instruction: Welche Teilaufgaben von "Urlaub buchen" sind noch offen?
     # Subtasks are only on the todo's page (todo.find reports a count).
     tags: [data, scope:todo, difficulty:medium, lang:de]
-    optimalSteps: 1
-    requiredFacts: ["Flüge vergleichen", "Hotel reservieren"]
-    groundTruth:
-      mustNotChange: ["db.todos", "db.projects"]
-      artifactRubric:
-        criteria:
-          - id: beide_offenen
-            question: >
-              Nennt die Antwort "Flüge vergleichen" und "Hotel reservieren"
-              als offen?
-            weight: 2
-          - id: mietwagen_nicht
-            question: >
-              Vermeidet die Antwort, "Mietwagen prüfen" als offen zu nennen?
-    successCriteria:
-      - type: artifactRubric
-        artifactKey: meta.done
-        judgeModel: gpt-oss:20b
-        weight: 1.0

@@ -86,3 +86,10 @@ alongside their predecessors, and the tools are `observe_ui_catalog` and
   fitted in four lines. `observe_ui_catalog` keeps it off the prompt and out
   of the episodes that never render anything, at the price of one observation
   in the ones that do.
+
+## Update 2026-11-18: A2UI 1.0
+
+`package:genui` is discontinued in favour of `a2ui_flutter`, which renders v0.9 and 1.0. `GenUiCatalog.protocolVersion`
+selects the version a host takes (`v0.9` by default); the bridge checks each message against it and publishes it in
+`genui.catalog` and the `genui.render` payload schema. Agents read it from the descriptor and adapt their v0.9 wording
+only for a 1.0 host, so v0.9 prompts and tools keep their hashes.

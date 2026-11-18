@@ -12,6 +12,7 @@ import '../routing/model_router.dart';
 import 'agent_config.dart';
 import 'compaction.dart';
 import 'decisions.dart';
+import 'strategies.dart' show a2uiDialect, a2uiVersionOf;
 
 /// Shared base of all LLM reference agents (spec §7): same prompt skeleton,
 /// same loop logic, same telemetry capture — subclasses differ *only* in
@@ -336,8 +337,10 @@ abstract base class ToolLoopAgent implements BenchmarkAgent, AgentWarmUp, AgentM
 
   /// The system message: [systemPromptFor], then the envelope listing when
   /// [listingInSystem].
-  String _systemMessageFor(EnvironmentDescriptor environment) =>
-      listingInSystem ? '${systemPromptFor(environment)}\n\n${_envelopeListing(environment)}' : systemPromptFor(environment);
+  String _systemMessageFor(EnvironmentDescriptor environment) {
+    final prompt = a2uiDialect(systemPromptFor(environment), a2uiVersionOf(environment));
+    return listingInSystem ? '$prompt\n\n${_envelopeListing(environment)}' : prompt;
+  }
 
   /// Marks where the frozen prompt ends and the app's text begins. Says who
   /// wrote what follows, so a model does not read it as the task.

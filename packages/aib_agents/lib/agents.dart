@@ -37,6 +37,7 @@ export 'src/llm/constrained_tool_calls.dart';
 export 'src/llm/embedding_client.dart';
 export 'src/llm/fallback_llm_client.dart';
 export 'src/llm/llm_client.dart';
+export 'src/llm/llama_cpp_client.dart';
 export 'src/llm/llm_http.dart';
 export 'src/llm/ollama_client.dart';
 export 'src/llm/openai_client.dart';

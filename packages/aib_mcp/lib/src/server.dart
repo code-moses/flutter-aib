@@ -27,7 +27,7 @@ base class AibMcpServer extends MCPServer with LoggingSupport, ElicitationReques
           ),
       _framework = frameworkRevision,
       super.fromStreamChannel(
-        implementation: Implementation(name: 'aib', version: '1.0.0'),
+        implementation: Implementation(name: 'aib', version: '1.1.0'),
         instructions: _instructions,
       ) {
     _registerTools();

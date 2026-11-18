@@ -1,0 +1,29 @@
+# local_qwen3_8_27b_full_llamacpp.yaml with only `agent.warmPrefix: true` changed.
+# Qwen3.8 is a hybrid model (architecture qwen35, gated-delta-net layers with a
+# recurrent state): llama-server can reuse a cached prefix only from a context
+# checkpoint, and it keeps one ~512 tokens before the end of the last prompt.
+# A task's first call (system prompt + tools + bootstrap + task line) diverges
+# from the previous episode's last prompt far before that (that episode ended
+# on a form-extended tool list), so it re-reads ~16k tokens: 110-165 s at
+# ~130 tokens/s, over a third of the 300 s budget. The prime between episodes
+# moves that read off every episode's clock. The second read, when form.open
+# adds tools in the middle of the prompt, stays on the clock.
+llm:
+  provider: llamacpp
+  model: qwen3.8:27b
+  baseUrl: http://localhost:8080
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+  toolSurface: full
+  warmPrefix: true
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full

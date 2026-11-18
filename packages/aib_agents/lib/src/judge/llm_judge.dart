@@ -129,6 +129,7 @@ under the rubric's name.''';
       return JudgeAnswer(
         answers: const {},
         rationale: 'judge returned no structured answer after a second request',
+        formatFailure: true,
         tokensPrompt: spend.prompt,
         tokensCompletion: spend.completion,
         latencyMs: spend.ms,

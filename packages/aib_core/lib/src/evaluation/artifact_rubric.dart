@@ -75,12 +75,27 @@ final class JudgeRequest {
   final JsonMap evidence;
 }
 
+/// Verdict detail key: how many judge consultations of a criterion returned
+/// no readable answer.
+const judgeFormatFailuresKey = 'judgeFormatFailures';
+
 final class JudgeAnswer {
-  const JudgeAnswer({required this.answers, this.rationale, this.tokensPrompt = 0, this.tokensCompletion = 0, this.latencyMs = 0});
+  const JudgeAnswer({
+    required this.answers,
+    this.rationale,
+    this.tokensPrompt = 0,
+    this.tokensCompletion = 0,
+    this.latencyMs = 0,
+    this.formatFailure = false,
+  });
 
   /// criterion id -> passed.
   final Map<String, bool> answers;
   final String? rationale;
+
+  /// No answer in the required form; recorded as `judgeFormatFailures`, and
+  /// `aib evaluate` fails.
+  final bool formatFailure;
 
   /// What this consultation cost. Zero from a judge that does not report it.
   final int tokensPrompt;
@@ -198,6 +213,7 @@ final class ArtifactRubricEvaluator implements CriterionEvaluator {
     var judgePrompt = 0;
     var judgeCompletion = 0;
     var judgeLatency = 0;
+    var formatFailures = 0;
     for (var i = 0; i < repetitions; i++) {
       final answer = await activeJudge.judge(
         JudgeRequest(taskInstruction: context.task.instruction, artifact: artifact, rubric: rubric, evidence: evidence),
@@ -207,6 +223,7 @@ final class ArtifactRubricEvaluator implements CriterionEvaluator {
           votes.update(criterion.id, (v) => v + 1, ifAbsent: () => 1);
         }
       }
+      if (answer.formatFailure) formatFailures++;
       rationales.add(answer.rationale ?? '');
       answers.add({for (final c in rubric.criteria) c.id: answer.answers[c.id] ?? false});
       judgePrompt += answer.tokensPrompt;
@@ -243,6 +260,8 @@ final class ArtifactRubricEvaluator implements CriterionEvaluator {
         // reviewing a disagreement can see why the judge said no.
         'answers': answers,
         if (rationales.any((r) => r.isNotEmpty)) 'rationales': rationales,
+        // Consultations whose answer could not be read.
+        if (formatFailures > 0) judgeFormatFailuresKey: formatFailures,
         // What this verdict cost to reach.
         if (judgePrompt + judgeCompletion > 0) ...{
           'judgeCalls': repetitions,

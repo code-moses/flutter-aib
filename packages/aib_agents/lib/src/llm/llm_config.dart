@@ -11,6 +11,7 @@ import 'cassette_llm_client.dart';
 import 'embedding_client.dart';
 import 'fallback_llm_client.dart';
 import 'faulting_llm_client.dart';
+import 'llama_cpp_client.dart';
 import 'llm_client.dart';
 import 'llm_http.dart';
 import 'ollama_client.dart';
@@ -23,12 +24,13 @@ import 'openai_client.dart';
 /// `suites/agents/*.yaml` use:
 ///
 /// ```yaml
-/// provider: anthropic | openai | azure | ollama
+/// provider: anthropic | openai | azure | ollama | llamacpp
 /// model: claude-sonnet-4-6
 /// apiKeyEnv: ANTHROPIC_API_KEY   # optional, provider default otherwise
 /// baseUrl: http://localhost:11434 # optional
 /// contextTokens: 32768            # ollama only: num_ctx
-/// think: false                    # ollama only: bool, or 'low'|'medium'|'high'
+/// think: false                    # ollama, llamacpp: bool, or 'low'|'medium'|'high'
+/// cachePrompt: true               # llamacpp only: reuse the slot's KV prefix (default)
 /// ```
 ///
 /// The layered one separates the connection from the knobs that change what
@@ -288,9 +290,19 @@ abstract final class LlmClientFactory {
         think: llm['think'],
         retryPolicy: retry,
       ),
+      // llama.cpp's own server, started by the operator (`tool/llama_server.sh`),
+      // not through Ollama. `contextTokens` is what one request must get.
+      'llamacpp' => LlamaCppClient(
+        model: model,
+        baseUrl: baseUrl ?? LlamaCppClient.defaultBaseUrl,
+        contextTokens: (llm['contextTokens'] as num?)?.toInt() ?? 32768,
+        think: llm['think'],
+        cachePrompt: llm['cachePrompt'] as bool? ?? true,
+        retryPolicy: retry,
+      ),
       _ => throw ArgumentError(
         'unknown provider "$provider" '
-        '(anthropic | openai | azure | ollama)',
+        '(anthropic | openai | azure | ollama | llamacpp)',
       ),
     };
     return client;

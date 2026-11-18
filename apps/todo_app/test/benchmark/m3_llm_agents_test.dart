@@ -117,6 +117,8 @@ void main() {
     handle.dispose();
   });
 
+  // Skipped without todo_v1.private.yaml (a public checkout, CI):
+  // todo.complete.single is held out and withheld there.
   testWidgets('strategy contrast: intent path beats UI path on efficiency '
       'for the same goal', (tester) async {
     final handle = tester.ensureSemantics();
@@ -169,5 +171,5 @@ void main() {
       reason: 'tree observation is heavier than the intent catalog',
     );
     handle.dispose();
-  });
+  }, skip: suite.taskById('todo.complete.single') == null);
 }

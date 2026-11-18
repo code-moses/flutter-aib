@@ -29,7 +29,7 @@ final class LlmTarget {
   final String? baseUrl;
   final String? apiKeyEnv;
 
-  bool get isLocal => provider == 'ollama';
+  bool get isLocal => provider == 'ollama' || provider == 'llamacpp';
 }
 
 /// Two model names close enough that a judge would be grading its own homework.

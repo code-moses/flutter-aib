@@ -133,3 +133,9 @@ aib_mcp.local.yaml
 # API keys the local runner recipes source
 .env
 results/.aib_mcp/
+
+# Held-out tasks: expected results and reference solutions are not published.
+suites/**/*.private.yaml
+
+# Experiments for model evaluations
+experiments/

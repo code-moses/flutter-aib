@@ -2,7 +2,7 @@ name: aib_core
 description: >-
   AI Interaction Benchmark core in pure Dart: task model, benchmark engine,
   episode traces, metrics, evaluation, aggregation and reporting.
-version: 1.0.0
+version: 1.1.0
 repository: https://github.com/code-moses/flutter-aib/tree/main/packages/aib_core
 resolution: workspace
 

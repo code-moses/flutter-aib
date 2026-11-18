@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:aib_cli/aib_cli.dart';
+import 'package:aib_core/aib_core.dart';
 import 'package:aib_mcp/aib_mcp.dart';
 import 'package:dart_mcp/client.dart';
 import 'package:path/path.dart' as p;
@@ -73,7 +74,8 @@ void main() {
     test('a suite description leaves the holdout out', () async {
       final suite = await asked.ok('aib_describe_suite', {'suite': 'todo_v2'});
       final holdout = SuiteSplit.load(repoRoot, 'todo_v2')!.holdout;
-      expect(suite['split'], {'tune': 16 - holdout.length, 'holdout': holdout.length});
+      final tasks = SuiteLoader.loadFile(p.join(repoRoot, 'suites', 'todo_v2.yaml')).suite!.tasks.map((t) => t.id);
+      expect(suite['split'], {'tune': tasks.where((id) => !holdout.contains(id)).length, 'holdout': holdout.length});
       expect((suite['tasks'] as List).map((t) => (t as Map)['id']), everyElement(isNot(isIn(holdout))));
     });
 

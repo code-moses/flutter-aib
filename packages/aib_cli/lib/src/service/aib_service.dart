@@ -6,6 +6,7 @@ import 'package:aib_core/aib_core.dart';
 import 'package:aib_core/testing.dart';
 import 'package:aib_otel/aib_otel.dart';
 import 'package:path/path.dart' as p;
+import 'package:yaml/yaml.dart';
 
 import '../builtins.dart';
 import '../label_sheet.dart';
@@ -842,6 +843,73 @@ final class AibService {
     );
   }
 
+  /// Every run against the first: intervals per run, paired differences with
+  /// a Bonferroni interval, and the tasks to read. Runs may cover different
+  /// tasks (differences are over the shared ones); other manifest differences
+  /// are refused as in a sweep.
+  Future<BaselineComparisonOutcome> compareBaseline(
+    List<String> runDirs, {
+    ScoringOptions options = const ScoringOptions(),
+    List<String> vary = const [],
+    bool allowAnyDiff = false,
+    String? setAside,
+  }) async {
+    if (runDirs.length < 2) throw const AibError('compare --baseline needs at least two --runs directories', exitCode: 64);
+    final runs = [for (final dir in runDirs) await evaluateRun(dir, options: options)];
+    String label(EvaluatedRun run) => p.basename(p.normalize(p.absolute(run.runDir)));
+    final unexplained = <String, List<ManifestDifference>>{
+      for (final run in runs.skip(1))
+        if (manifestDifferences(
+              runs.first.manifest,
+              run.manifest,
+              judgeA: runs.first.judge,
+              judgeB: run.judge,
+            ).where((d) => !vary.any((pattern) => pathMatches(d.path, pattern))).toList()
+            case final differences when differences.isNotEmpty)
+          label(run): differences,
+    };
+    if (unexplained.isNotEmpty && !allowAnyDiff) {
+      throw UnintendedDifferences(
+        [
+          'These runs differ from ${label(runs.first)} in more than --vary names:',
+          for (final entry in unexplained.entries) ...[
+            '  ${entry.key}:',
+            for (final d in entry.value) '    ${d.path}: ${_short(d.a)} -> ${_short(d.b)}',
+          ],
+          'Name the intended ones with --vary, or pass --allow-any-diff.',
+        ].join('\n'),
+        unexplained,
+      );
+    }
+    final heldOut = {for (final run in runs) ...heldOutTasks(run.suite)};
+    final summaries = [for (final run in runs) BaselineComparison.summarise(label(run), run.records, setAside: setAside)];
+    final deltas = BaselineComparison.deltas(runs.first.records, {for (final run in runs.skip(1)) label(run): run.records}, heldOut: heldOut);
+    final suspects = BaselineComparison.suspects({for (final run in runs) label(run): run.records}, heldOut: heldOut);
+    final present = {
+      for (final run in runs)
+        for (final r in run.records)
+          if (heldOut.contains(r.taskId)) r.taskId,
+    };
+    return BaselineComparisonOutcome(
+      runs: runs,
+      markdown: BaselineComparison.toMarkdown(summaries, deltas, suspects, setAside: setAside, heldOut: present.length),
+      summaries: summaries,
+      deltas: deltas,
+      suspects: suspects,
+      differences: unexplained,
+    );
+  }
+
+  /// Held-out task ids of [suite], from `splits/<suite>.yaml` next to it.
+  static Set<String> heldOutTasks(TaskSuite suite) {
+    final source = suite.sourcePath;
+    if (source == null) return const {};
+    final file = File(p.join(p.dirname(source), 'splits', '${suite.name}.yaml'));
+    if (!file.existsSync()) return const {};
+    final json = asJsonMap(jsonDecode(jsonEncode(loadYaml(file.readAsStringSync()))));
+    return {for (final id in json['holdout'] as List? ?? const []) '$id'};
+  }
+
   static String _short(Object? value) {
     final text = value is String ? value : jsonEncode(value);
     return text.length <= 60 ? text : '${text.substring(0, 57)}...';
@@ -930,7 +998,7 @@ final class AibService {
     final (envName, envConfig) = Builtins.parseSpec(env);
     final selftest = OracleSelfTest(
       environment: Builtins.environmentRegistry().create(envName, Builtins.loadConfig(envConfig)),
-      references: reference == null ? ScriptedAgent(agentId: 'reference') : ScriptedAgent.fromJson(Builtins.loadConfig(reference)),
+      references: reference == null ? ScriptedAgent(agentId: 'reference') : ScriptedAgent.fromJson(SuiteLoader.loadReferences(reference)),
       evaluator: EpisodeEvaluator(
         evaluators: EpisodeEvaluator.defaultEvaluators(judge: artifactJudge, assertions: intentConventions.assertions),
       ),
@@ -1013,7 +1081,7 @@ final class AibService {
 
     for (final target in [?judgeTarget, ?simulatorTarget, ...agentTargets]) {
       if (!target.isLocal) continue;
-      checks.add(await _probeOllama(target));
+      checks.add(target.provider == 'llamacpp' ? await _probeLlamaServer(target) : await _probeOllama(target));
     }
     return DoctorReport(checks);
   }
@@ -1052,6 +1120,33 @@ final class AibService {
       );
     } on Object catch (error) {
       return DoctorCheck(DoctorStatus.fail, '${target.label}: $base is not answering', detail: '$error', nextStep: 'ollama serve');
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  /// Reachable, loaded, and giving a request the context the arm expects.
+  Future<DoctorCheck> _probeLlamaServer(LlmTarget target) async {
+    final base = target.baseUrl ?? 'http://localhost:8080';
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
+    Future<String> get(String path) async {
+      final request = await client.getUrl(Uri.parse('$base$path'));
+      final response = await request.close().timeout(const Duration(seconds: 5));
+      return response.transform(utf8.decoder).join();
+    }
+
+    try {
+      final props = asJsonMap(jsonDecode(await get('/props')));
+      final file = '${props['model_path']}'.split('/').last;
+      final ctx = asJsonMap(props['default_generation_settings'])['n_ctx'];
+      return DoctorCheck(DoctorStatus.ok, '${target.label}: llama-server on $base serves $file (ctx $ctx per slot, ${props['total_slots']} slot(s))');
+    } on Object catch (error) {
+      return DoctorCheck(
+        DoctorStatus.fail,
+        '${target.label}: llama-server at $base is not answering',
+        detail: '$error',
+        nextStep: 'tool/llama_server.sh ${target.model}',
+      );
     } finally {
       client.close(force: true);
     }

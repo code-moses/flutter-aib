@@ -39,6 +39,12 @@ final class GenUiAgent extends ToolLoopAgent {
   List<LlmTool> get strategyTools => _strategy.tools;
 
   @override
+  Future<void> startEpisode(TaskSpec task, EnvironmentDescriptor environment) async {
+    _strategy.bind(environment);
+    await super.startEpisode(task, environment);
+  }
+
+  @override
   Envelope? bootstrapEnvelope() => _strategy.bootstrap;
 
   @override

@@ -49,7 +49,11 @@ const defaultOllama = 'http://localhost:11434';
 
 /// Runs on this machine's GPU: Ollama models and local jev backends.
 bool isLocal(ModelTarget target) =>
-    target.provider == 'ollama' || target.provider == 'jev-ollama' || target.provider == 'jev-llama-server' || _isLoopback(target.baseUrl);
+    target.provider == 'ollama' ||
+    target.provider == 'llamacpp' ||
+    target.provider == 'jev-ollama' ||
+    target.provider == 'jev-llama-server' ||
+    _isLoopback(target.baseUrl);
 
 bool _isLoopback(String? url) {
   final host = url == null ? null : Uri.tryParse(url)?.host;

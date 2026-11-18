@@ -2,6 +2,9 @@
   "config": "vendoc_demo",
   "overrides": {},
   "userAnswers": {
-    "confirm": true
+    "confirm": true,
+    "Kontakt": "SYSCO EDV",
+    "Contact": "SYSCO EDV",
+    "pick": "BFAF6126-5BB6-44A8-88EC-018F155284A6"
   }
 }

@@ -11,8 +11,8 @@ import 'json_schema.dart';
 /// never learn why.
 ///
 /// [catalogId] is the A2UI catalog URI the host renders; it is what a
-/// `createSurface` message must name. The default is the A2UI basic catalog,
-/// which is what `package:genui`'s `BasicCatalogItems` implements.
+/// `createSurface` message must name. [protocolVersion] is the A2UI version its
+/// messages carry: `v0.9` (default) or `1.0`.
 final class GenUiCatalog {
   /// Component type name — exactly as it appears in a component's
   /// `"component"` field (`Text`, `Column`, `Card`, …) — mapped to the JSON
@@ -27,48 +27,64 @@ final class GenUiCatalog {
 
   final String catalogId;
 
+  /// `v0.9` or `1.0`.
+  final String protocolVersion;
+
   /// Host-specific conventions the agent cannot infer from the component
   /// list — deep links, for instance. Sent verbatim with `genui.catalog`.
   final String rules;
 
-  const GenUiCatalog({required this.components, this.catalogId = basicCatalogId, this.rules = ''});
+  const GenUiCatalog({required this.components, this.catalogId = basicCatalogId, this.rules = '', this.protocolVersion = v0_9});
 
-  /// The A2UI basic catalog, as implemented by `package:genui`.
+  static const v0_9 = 'v0.9';
+  static const v1_0 = '1.0';
+
+  /// The A2UI v0.9 basic catalog.
   static const basicCatalogId = 'https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json';
+
+  /// The A2UI v1.0 basic catalog.
+  static const basicV1CatalogId = 'https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json';
 
   /// The basic catalog's component *names* minus the ones that need an asset
   /// URL — an agent has no trustworthy source for one, so most hosts render
   /// without them.
   ///
   /// Names only: the schemas belong to the renderer, and the framework does
-  /// not depend on one. A host with `package:genui` in the tree should build
-  /// its catalog from `Catalog.items` instead, and get property validation
-  /// with it.
-  static const basicNoAssets = GenUiCatalog(
-    components: {
-      'Button': {},
-      'Card': {},
-      'CheckBox': {},
-      'ChoicePicker': {},
-      'Column': {},
-      'DateTimeInput': {},
-      'Divider': {},
-      'Icon': {},
-      'List': {},
-      'Modal': {},
-      'Row': {},
-      'Slider': {},
-      'Tabs': {},
-      'Text': {},
-      'TextField': {},
-    },
-  );
+  /// not depend on one. A host should build its catalog from its renderer's
+  /// component schemas instead, and get property validation with it.
+  static const basicNoAssets = GenUiCatalog(components: _basicNoAssetComponents);
+
+  /// [basicNoAssets] for A2UI v1.0: the same component names.
+  static const basicNoAssetsV1 = GenUiCatalog(components: _basicNoAssetComponents, catalogId: basicV1CatalogId, protocolVersion: v1_0);
+
+  static const _basicNoAssetComponents = <String, JsonMap>{
+    'Button': {},
+    'Card': {},
+    'CheckBox': {},
+    'ChoicePicker': {},
+    'Column': {},
+    'DateTimeInput': {},
+    'Divider': {},
+    'Icon': {},
+    'List': {},
+    'Modal': {},
+    'Row': {},
+    'Slider': {},
+    'Tabs': {},
+    'Text': {},
+    'TextField': {},
+  };
+
+  /// Whether a message's `version` field is this catalog's protocol version
+  /// (`1.0` may be written `v1.0`).
+  bool acceptsVersion(Object? version) => protocolVersion == v1_0 ? version == '1.0' || version == 'v1.0' : version == protocolVersion;
 
   /// The component type names, sorted — what an error message lists.
   List<String> get componentNames => components.keys.toList()..sort();
 
   JsonMap toJson() => {
     'catalogId': catalogId,
+    'protocolVersion': protocolVersion,
     'components': {for (final name in componentNames) name: components[name]!},
     if (rules.isNotEmpty) 'rules': rules,
   };
@@ -76,7 +92,12 @@ final class GenUiCatalog {
   /// What `genui.catalog` lists: the component names and the host rules,
   /// without the property schemas. The schemas are the bulk of it — 13 KB
   /// against 1.3 KB here — and a surface uses a handful of component types.
-  JsonMap toSummaryJson() => {'catalogId': catalogId, 'components': componentNames, if (rules.isNotEmpty) 'rules': rules};
+  JsonMap toSummaryJson() => {
+    'catalogId': catalogId,
+    'protocolVersion': protocolVersion,
+    'components': componentNames,
+    if (rules.isNotEmpty) 'rules': rules,
+  };
 
   /// The property schemas of [names], for `genui.describe`. Unknown names come
   /// back in `unknown` rather than silently missing, or a model would read
@@ -104,15 +125,16 @@ final class GenUiCatalog {
 ///                                                      schema}, unknown?}
 ///   act     `genui.render`  {messages: [...]} -> {accepted, surfaces}
 ///
-/// The payload is a batch of **A2UI v0.9 messages** (https://a2ui.org), the
-/// protocol `package:genui` renders (ADR 0012). A batch because a surface needs
+/// The payload is a batch of **A2UI messages** (https://a2ui.org) in the
+/// catalog's protocol version (v0.9 by default, or 1.0; ADR 0012). A batch
+/// because a surface needs
 /// at least two messages (`createSurface`, then `updateComponents`), and one
 /// render is one act.
 ///
 /// ```json
 /// {"messages": [
 ///   {"version": "v0.9",
-///    "createSurface": {"surfaceId": "s1", "catalogId": "…basic_catalog.json"}},
+///    "createSurface": {"surfaceId": "s1", "catalogId": "…/catalogs/basic/catalog.json"}},
 ///   {"version": "v0.9",
 ///    "updateComponents": {"surfaceId": "s1", "components": [
 ///      {"id": "root", "component": "Column", "children": ["t"]},
@@ -122,8 +144,16 @@ final class GenUiCatalog {
 ///
 /// The rendered surface is judged from the *trace*; [onMessages] additionally
 /// lets the app display it live.
+/// [GenUiBridge.prepare]'s output: the batch to show and what the result adds.
+final class GenUiPrepared {
+  const GenUiPrepared(this.messages, {this.result = const {}});
+
+  final List<JsonMap> messages;
+  final JsonMap result;
+}
+
 final class GenUiBridge {
-  GenUiBridge({required this.dataContextProvider, this.catalog = GenUiCatalog.basicNoAssets, this.onMessages});
+  GenUiBridge({required this.dataContextProvider, this.catalog = GenUiCatalog.basicNoAssets, this.onMessages, this.prepare});
 
   /// The app data offered to generative-UI agents (e.g. all todos).
   final Future<JsonMap> Function() dataContextProvider;
@@ -133,6 +163,11 @@ final class GenUiBridge {
 
   /// Optional live rendering hook for the host app: one accepted batch.
   final void Function(List<JsonMap> messages)? onMessages;
+
+  /// Optional host step between validation and display (e.g. a chart that
+  /// names its data). A [FormatException] rejects the batch as
+  /// `invalid_surface`.
+  final Future<GenUiPrepared> Function(List<JsonMap> messages)? prepare;
 
   /// The last accepted batch (inspectable by tests/hosts).
   List<JsonMap>? lastMessages;
@@ -194,16 +229,22 @@ final class GenUiBridge {
     );
 
     environment.registerHandler(
-      const EnvelopeSpec(
+      EnvelopeSpec(
         key: 'genui.render',
         kind: .act,
-        description: 'Render a UI surface by applying a batch of A2UI v0.9 messages.',
+        description: 'Render a UI surface by applying a batch of A2UI ${catalog.protocolVersion} messages.',
         payloadSchema: {
           'type': 'object',
           'properties': {
             'messages': {
               'type': 'array',
-              'items': {'type': 'object'},
+              'items': {
+                'type': 'object',
+                // Read by agents to write the host's A2UI version.
+                'properties': {
+                  'version': {'const': catalog.protocolVersion},
+                },
+              },
             },
           },
           'required': ['messages'],
@@ -232,12 +273,24 @@ final class GenUiBridge {
           return EnvelopeResult.failed('invalid_surface', error);
         }
 
+        var shown = messages;
+        JsonMap added = const {};
+        if (prepare case final prepare?) {
+          try {
+            final prepared = await prepare(messages);
+            shown = prepared.messages;
+            added = prepared.result;
+          } on FormatException catch (e) {
+            return EnvelopeResult.failed('invalid_surface', e.message);
+          }
+        }
+
         _surfaces
           ..clear()
           ..addAll(surfaces);
-        lastMessages = messages;
-        onMessages?.call(messages);
-        return EnvelopeResult.ok({'accepted': true, 'surfaces': _surfaces.keys.toList()});
+        lastMessages = shown;
+        onMessages?.call(shown);
+        return EnvelopeResult.ok({...added, 'accepted': true, 'surfaces': _surfaces.keys.toList()});
       },
     );
   }
@@ -259,8 +312,8 @@ final class GenUiBridge {
     final touched = <String>{};
 
     for (final (i, message) in messages.indexed) {
-      if (message['version'] != 'v0.9') {
-        return 'messages[$i].version must be "v0.9"';
+      if (!catalog.acceptsVersion(message['version'])) {
+        return 'messages[$i].version must be "${catalog.protocolVersion}"';
       }
       final present = bodyKeys.where(message.containsKey).toList();
       if (present.length != 1) {

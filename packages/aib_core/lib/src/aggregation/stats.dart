@@ -99,10 +99,14 @@ abstract final class Stats {
   /// Paired, clustered bootstrap (Miller 2024): each cluster (a task) gives
   /// one difference `mean(b) − mean(a)`; clusters are resampled, not
   /// episodes, since episodes of one task are not independent.
+  ///
+  /// [alpha] sets the interval: 0.05 is 95 %; divide it by the number of
+  /// comparisons for a Bonferroni interval.
   static ({double meanDiff, double low, double high}) pairedClusterBootstrap(
     List<({List<num> a, List<num> b})> clusters, {
     int iterations = 10000,
     int seed = 42,
+    double alpha = 0.05,
   }) {
     final diffs = [
       for (final c in clusters)
@@ -115,7 +119,7 @@ abstract final class Stats {
     final means = <double>[
       for (var i = 0; i < iterations; i++) mean([for (var j = 0; j < diffs.length; j++) diffs[random.nextInt(diffs.length)]]),
     ];
-    return (meanDiff: mean(diffs), low: percentile(means, 2.5), high: percentile(means, 97.5));
+    return (meanDiff: mean(diffs), low: percentile(means, 50 * alpha), high: percentile(means, 100 - 50 * alpha));
   }
 
   /// 95% interval for a rate pooled over clusters (tasks), after Miller 2024,

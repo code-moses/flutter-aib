@@ -1,0 +1,11 @@
+# ollama_judge_k1.yaml served by llama-server (tool/llama_server.sh start gpt-oss:20b):
+# same GGUF blob (MXFP4), same single greedy vote. Only the runtime changed.
+# `think: low` is sent as the template's reasoning_effort.
+provider: llamacpp
+model: gpt-oss:20b
+baseUrl: http://localhost:8080
+contextTokens: 32768
+think: low
+judge:
+  k: 1
+  temperature: 0

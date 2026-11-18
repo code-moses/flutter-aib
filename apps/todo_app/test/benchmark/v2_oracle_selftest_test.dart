@@ -41,7 +41,7 @@ void main() {
     ];
     final selftest = OracleSelfTest(
       environment: harness.environment,
-      references: ScriptedAgent.fromJson(_yaml(suitesPath('references/todo_v2.yaml'))),
+      references: ScriptedAgent.fromJson(SuiteLoader.loadReferences(suitesPath('references/todo_v2.yaml'))),
       evaluator: EpisodeEvaluator(evaluators: EpisodeEvaluator.defaultEvaluators(judge: judge)),
     );
     final checks = (await tester.runAsync(() => selftest.run(tasks)))!;
@@ -53,7 +53,8 @@ void main() {
         '${check.problems.isEmpty ? 'ok  ' : 'FAIL'}  ${check.task.id}  '
         'reference ${check.hasReference ? score(check, 'reference') : 'none'}'
         ' · done ${score(check, 'null.done')} · abort '
-        '${score(check, 'null.abort')}',
+        '${score(check, 'null.abort')} · claim ${score(check, 'null.claim')} · refuse '
+        '${score(check, 'null.refuse')}',
       );
       for (final line in [...check.problems, ...check.warnings.map((w) => 'warn: $w')]) {
         // ignore: avoid_print

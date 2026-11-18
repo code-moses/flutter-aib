@@ -83,6 +83,36 @@ void main() {
     expect(check.problems, contains('null.done succeeds — the oracle credits doing nothing'));
   });
 
+  test('every task meets the four trivial agents', () async {
+    final check = await selftest.check(_task('sound', const FinalStateExpectation(query: _query, expectCount: 1, expectFields: {'completed': true})));
+    expect(check.probes.map((p) => p.name), ['reference', ...OracleSelfTest.trivialProbes]);
+    final claim = check.probe('null.claim')!.trace.events.firstWhere((e) => e.type == TraceEventTypes.agentEnvelope);
+    expect('${(claim.data['payload'] as Map)['summary']}', contains('complete "Existing"'));
+  });
+
+  test('a lax oracle credits a confident claim; an abort fails a task that is not to be refused', () async {
+    final check = await selftest.check(_task('lax', const FinalStateExpectation(query: _query, expectCount: 1)));
+    expect(check.problems, contains('null.claim succeeds — the oracle credits doing nothing'));
+    expect(check.probe('null.refuse')!.verdict.type, isNot(VerdictType.success));
+  });
+
+  test('a refusal that passes a task whose answer is a refusal is a warning', () async {
+    final lax = _task('lax', const FinalStateExpectation(query: _query, expectCount: 1));
+    final refusalTask = TaskSpec(
+      id: lax.id,
+      title: lax.title,
+      instruction: lax.instruction,
+      budget: lax.budget,
+      fixture: lax.fixture,
+      groundTruth: lax.groundTruth,
+      successCriteria: lax.successCriteria,
+      abortIsAnAnswer: true,
+    );
+    final check = await selftest.check(refusalTask);
+    expect(check.problems.where((p) => p.startsWith('null.refuse')), isEmpty);
+    expect(check.warnings, contains(startsWith('null.refuse succeeds: an agent that refuses everything')));
+  });
+
   test('a task without a reference is still probed with doing nothing', () async {
     final check = await selftest.check(_task('unreferenced', const FinalStateExpectation(query: _query, expectCount: 1)));
     expect(check.hasReference, isFalse);

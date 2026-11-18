@@ -38,40 +38,18 @@ tasks:
         label: "Task angelegt, Datum falsch"
 
   - id: todo.create.full
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Aufgabe erstellen (mit Notiz)"
     instruction: >
       Erstelle eine neue Aufgabe "Paket abholen" mit Fälligkeitsdatum
       2026-07-12 und der Notiz "Postfiliale 12".
     tags: [crud, create, difficulty:easy]
-    optimalSteps: 1
-    groundTruth:
-      finalState:
-        - query: "db.todos.where(title == 'Paket abholen')"
-          expect:
-            count: 1
-            fields: { dueDate: "2026-07-12", notes: "Postfiliale 12", completed: false }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
-    partialCredit:
-      - condition: "count == 1 && fields.notes != 'Postfiliale 12'"
-        credit: 0.5
-        label: "Task angelegt, Notiz fehlt oder falsch"
 
   - id: todo.complete.single
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Aufgabe abschließen"
     instruction: Markiere die Aufgabe "Steuererklärung abgeben" als erledigt.
     tags: [crud, update, difficulty:easy]
-    optimalSteps: 1
-    groundTruth:
-      finalState:
-        - query: "db.todos.where(title == 'Steuererklärung abgeben')"
-          expect:
-            count: 1
-            fields: { completed: true }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
 
   - id: todo.rename
     title: "Aufgabe umbenennen"
@@ -156,39 +134,18 @@ tasks:
         weight: 1.0
 
   - id: todo.delete.completed
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Erledigte Aufgaben aufräumen"
     instruction: Lösche alle bereits erledigten Aufgaben.
     tags: [crud, delete, batch, difficulty:hard]
-    optimalSteps: 3
-    groundTruth:
-      finalState:
-        - query: "db.todos.where(completed == true)"
-          expect: { count: 0 }
-        - query: "db.todos"
-          expect: { count: 7 }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
 
   - id: todo.create.duplicate_guard
+    withheld: true # held out; the rest of this task is in the private file next to this suite, which is not published
     title: "Duplikat vermeiden"
     instruction: >
       Stelle sicher, dass eine Aufgabe "Wäsche waschen" existiert.
       Lege sie nur an, falls sie noch nicht vorhanden ist.
     tags: [crud, guard, difficulty:medium]
-    groundTruth:
-      finalState:
-        - query: "db.todos.where(title == 'Wäsche waschen')"
-          expect: { count: 1 }
-        - query: "db.todos"
-          expect: { count: 10 }
-    successCriteria:
-      - type: finalStateMatch
-        weight: 1.0
-    partialCredit:
-      - condition: "count == 2"
-        credit: 0.3
-        label: "Duplikat angelegt"
 
   # --- Search / filter: no data change, so finalStateMatch is blind here.
   #     Scored via the milestone timeline (§5.2 stateSequence) plus a

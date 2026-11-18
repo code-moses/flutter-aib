@@ -6,6 +6,7 @@
 library;
 
 export 'src/aggregation/aggregator.dart';
+export 'src/aggregation/baseline_comparison.dart';
 export 'src/aggregation/comparability.dart';
 export 'src/aggregation/compare.dart';
 export 'src/aggregation/regression_gate.dart';
@@ -49,6 +50,7 @@ export 'src/reporting/junit_reporter.dart';
 export 'src/reporting/reporting.dart';
 export 'src/task/suite_loader.dart';
 export 'src/task/task.dart';
+export 'src/task/withheld_tasks.dart';
 export 'src/trace/jsonl_trace_observer.dart';
 export 'src/trace/trace.dart';
 export 'src/trace/trace_observer.dart';

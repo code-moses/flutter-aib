@@ -336,6 +336,16 @@ final class EvaluateCommand extends AibCommand {
       stdout.writeln('WARN $warning');
     }
     stdout.writeln('Wrote ${summary.written.join(' and ')}.');
+    final unreadable = summary.judgeFormatFailures;
+    if (unreadable.isNotEmpty) {
+      stderr.writeln(
+        'ERROR the judge returned no readable answer in ${unreadable.length} episode(s) '
+        '(${unreadable.take(5).join(', ')}${unreadable.length > 5 ? ', …' : ''}); their rubric '
+        'criteria count as failed although nothing was judged. Check the judge server '
+        '(chat template, tool support) and evaluate again.',
+      );
+      return 1;
+    }
     return 0;
   }
 }
@@ -572,7 +582,15 @@ final class CompareCommand extends AibCommand {
             '(`agents.*.metadata.model`, or just `model`). Any other '
             'difference refuses the comparison.',
       )
-      ..addFlag('allow-any-diff', negatable: false, help: 'Compare whatever differs; the differences are still listed.');
+      ..addFlag('allow-any-diff', negatable: false, help: 'Compare whatever differs; the differences are still listed.')
+      ..addFlag(
+        'baseline',
+        negatable: false,
+        help:
+            'Test every run against the first: intervals per run, paired differences with a Bonferroni interval, '
+            'and the tasks to read before trusting them. Held-out tasks stay out of the per-task views.',
+      )
+      ..addOption('set-aside', help: 'With --baseline: also report the score without criteria whose key contains this.');
     _addMetricsOption(argParser);
     _addJudgeKOption(argParser);
     _addJudgeCassetteOption(argParser);
@@ -587,6 +605,25 @@ final class CompareCommand extends AibCommand {
 
   @override
   Future<int> execute() async {
+    final out = args['out'] as String?;
+    if (args['baseline'] as bool) {
+      final baseline = await service.compareBaseline(
+        args['runs'] as List<String>,
+        options: _scoring(args),
+        vary: args['vary'] as List<String>,
+        allowAnyDiff: args['allow-any-diff'] as bool,
+        setAside: args['set-aside'] as String?,
+      );
+      baseline.runs.forEach(reportRun);
+      if (out == null) {
+        stdout.write(baseline.markdown);
+      } else {
+        Directory(out).createSync(recursive: true);
+        File(p.join(out, 'baseline.md')).writeAsStringSync(baseline.markdown);
+        stdout.writeln('Wrote ${p.join(out, 'baseline.md')}.');
+      }
+      return 0;
+    }
     final outcome = await service.compare(
       args['runs'] as List<String>,
       options: _scoring(args),
@@ -594,7 +631,6 @@ final class CompareCommand extends AibCommand {
       allowAnyDiff: args['allow-any-diff'] as bool,
     );
     outcome.runs.forEach(reportRun);
-    final out = args['out'] as String?;
     switch (outcome) {
       case SweepComparison(:final markdown, :final html):
         if (out == null) {
@@ -710,7 +746,7 @@ final class SelftestCommand extends AibCommand {
       stdout.writeln(
         '${outcome.failed(check) ? 'FAIL' : 'ok  '}  ${check.task.id}  '
         'reference ${check.hasReference ? score('reference') : 'none'} · '
-        'done ${score('null.done')} · abort ${score('null.abort')}',
+        'done ${score('null.done')} · abort ${score('null.abort')} · claim ${score('null.claim')} · refuse ${score('null.refuse')}',
       );
       for (final problem in check.problems) {
         stdout.writeln('        $problem');

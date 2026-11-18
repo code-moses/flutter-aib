@@ -10,6 +10,7 @@ import '../evaluation/assertions.dart';
 import '../evaluation/judge_provenance.dart';
 import '../ports/environment.dart';
 import 'task.dart';
+import 'withheld_tasks.dart';
 
 final class SuiteLoadResult {
   const SuiteLoadResult({this.suite, this.errors = const [], this.warnings = const []});
@@ -60,14 +61,42 @@ const _budgetKeys = {'maxSteps', 'maxWallClockSeconds', 'maxTokens', 'maxTurns',
 final class SuiteLoader {
   /// [assertionKinds]: kinds registered beyond the built-in ones (a
   /// provider's), which are then validated rather than only warned about.
+  ///
+  /// Merges withheld tasks from the [privatePath] sibling when it exists.
   static SuiteLoadResult loadFile(String path, {bool inlineFixtures = true, Set<String> assertionKinds = const {}}) {
     final file = File(path);
     if (!file.existsSync()) {
       return SuiteLoadResult(errors: ['Suite file not found: $path']);
     }
-    final content = file.readAsStringSync();
+    var content = file.readAsStringSync();
+    final private = File(privatePath(path));
+    if (private.existsSync()) {
+      final (merged, problems) = mergeWithheld(content, private.readAsStringSync());
+      if (problems.isNotEmpty) {
+        return SuiteLoadResult(errors: [for (final problem in problems) '${private.path}: $problem']);
+      }
+      content = merged;
+    }
     return loadString(content, sourcePath: path, basePath: file.parent.path, inlineFixtures: inlineFixtures, assertionKinds: assertionKinds);
   }
+
+  /// A reference-trajectory file with the `scripts` of its [privatePath]
+  /// sibling added. A task scripted in both is an error.
+  static JsonMap loadReferences(String path) {
+    JsonMap read(String file) => asJsonMap(jsonDecode(jsonEncode(loadYaml(File(file).readAsStringSync()))));
+    final json = read(path);
+    final private = File(privatePath(path));
+    if (!private.existsSync()) return json;
+    final scripts = {...asJsonMap(json['scripts'])};
+    for (final entry in asJsonMap(read(private.path)['scripts']).entries) {
+      if (scripts.containsKey(entry.key)) throw FormatException('${private.path}: "${entry.key}" is scripted in $path too');
+      scripts[entry.key] = entry.value;
+    }
+    return {...json, 'scripts': scripts};
+  }
+
+  /// `suites/x.yaml` -> `suites/x.private.yaml` (git-ignored).
+  static String privatePath(String path) => p.join(p.dirname(path), '${p.basenameWithoutExtension(path)}.private${p.extension(path)}');
 
   static SuiteLoadResult loadString(
     String yamlContent, {
@@ -137,6 +166,7 @@ final class SuiteLoader {
     );
     final seenIds = <String>{};
     final tasks = <TaskSpec>[];
+    final withheld = <String>[];
     for (final (i, raw) in tasksJson.indexed) {
       final t = asJsonMap(raw);
       final id = t['id'] as String?;
@@ -145,12 +175,28 @@ final class SuiteLoader {
         errors.add('$ctx: missing "id"');
         continue;
       }
+      // Withheld, and this checkout has no private file.
+      if (t[withheldKey] == true) {
+        seenIds.add(id);
+        withheld.add(id);
+        continue;
+      }
       if (!seenIds.add(id)) {
         errors.add('$ctx: duplicate task id');
       }
       if (reader.read(t, id, ctx) case final task?) tasks.add(task);
     }
 
+    if (withheld.isNotEmpty) {
+      warnings.add(
+        '${withheld.length} withheld task(s) left out (${withheld.join(', ')}): '
+        'their expected results are in the private file next to the suite, '
+        'which this checkout does not have',
+      );
+    }
+    if (withheld.isNotEmpty && withheld.length == tasksJson.length) {
+      errors.add('every task is withheld');
+    }
     if (errors.isNotEmpty) {
       return SuiteLoadResult(errors: errors, warnings: warnings);
     }

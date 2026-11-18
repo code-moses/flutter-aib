@@ -228,6 +228,13 @@ final class EvaluationSummary {
   /// Why the rubric scores may not mean what they seem to.
   final List<String> judgeWarnings;
 
+  /// Episodes in which a judge consultation returned no readable answer: their
+  /// rubric criteria were scored as failed by the parser, not by the judge.
+  List<String> get judgeFormatFailures => [
+    for (final record in run.records)
+      if (record.verdict.details.values.any((d) => d is Map && (d[judgeFormatFailuresKey] as num? ?? 0) > 0)) record.episodeId,
+  ];
+
   Map<String, int> get byVerdict {
     final counts = <String, int>{};
     for (final record in run.records) {
@@ -237,6 +244,7 @@ final class EvaluationSummary {
   }
 
   JsonMap toJson() => {
+    if (judgeFormatFailures.isNotEmpty) 'judgeFormatFailures': judgeFormatFailures,
     'runId': run.manifest.runId,
     'runDir': run.runDir,
     'suite': run.suite.name,
@@ -339,6 +347,61 @@ final class PairComparison extends ComparisonOutcome {
     ],
     'comparisons': rows.length,
     'significant': significant,
+  };
+}
+
+/// Every run against the first (`aib compare --baseline`).
+final class BaselineComparisonOutcome {
+  const BaselineComparisonOutcome({
+    required this.runs,
+    required this.markdown,
+    required this.summaries,
+    required this.deltas,
+    required this.suspects,
+    this.differences = const {},
+  });
+
+  final List<EvaluatedRun> runs;
+  final String markdown;
+  final List<RunSummary> summaries;
+  final List<BaselineDelta> deltas;
+  final Map<String, List<String>> suspects;
+
+  /// Differences beyond `vary`, allowed through by `allowAnyDiff`.
+  final Map<String, List<ManifestDifference>> differences;
+
+  JsonMap toJson() => {
+    'baseline': summaries.first.label,
+    'runs': [
+      for (final s in summaries)
+        {
+          'label': s.label,
+          'episodes': s.episodes,
+          'tasks': s.tasks,
+          'verdicts': s.verdicts,
+          'successRate': s.successRate,
+          'wilson': [s.wilson.low, s.wilson.high],
+          'clustered': [s.clustered.low, s.clustered.high],
+          'score': s.score,
+          'scoreWithout': ?s.scoreWithout,
+          'passK': {'k': s.k, 'value': s.passK},
+          'ends': s.ends,
+        },
+    ],
+    'deltas': [
+      for (final d in deltas)
+        {
+          'run': d.label,
+          'metric': d.metric,
+          'tasks': d.tasks,
+          'meanDiff': d.ci.meanDiff,
+          'ci': [d.ci.low, d.ci.high],
+          'bonferroni': [d.adjusted.low, d.adjusted.high],
+          'significant': d.significant,
+          'significantAfterCorrection': d.significantAdjusted,
+        },
+    ],
+    'suspects': suspects,
   };
 }
 

@@ -1,0 +1,19 @@
+# Qwen3.6-35B-A3B (MoE, 3B active, Apache 2.0; vendor-reported scores only) on the default
+# surface. Thinking off, as on every local arm.
+llm:
+  provider: ollama
+  model: qwen3.6:35b-a3b
+  baseUrl: http://localhost:11434
+  contextTokens: 32768
+  think: false
+
+agent:
+  maxCompletionTokens: 2048
+  parallelToolCalls: false
+  observationWindow: 8
+
+router:
+  router: union
+  strategies: [intents, genui, user, semantics]
+  bootstrap: intents.catalog
+  profile: full
