@@ -336,7 +336,12 @@ final class GenUiBridge {
             return 'messages[$i].createSurface.catalogId must be '
                 '"${catalog.catalogId}"';
           }
-          surfaces[surfaceId] = <String>{};
+          final known = surfaces[surfaceId] = <String>{};
+          // 1.0 may create a surface with its components.
+          if (catalog.protocolVersion == GenUiCatalog.v1_0 && body.containsKey('components')) {
+            final error = _validateComponents(body['components'], catalog, known, 'messages[$i].createSurface');
+            if (error != null) return error;
+          }
           touched.add(surfaceId);
         case 'updateComponents':
           final known = surfaces[surfaceId];

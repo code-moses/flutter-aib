@@ -360,6 +360,24 @@ void main() {
       }
     });
 
+    test('a 1.0 createSurface may carry its components, checked like an update', () async {
+      JsonMap createWith(List<JsonMap> components) => v1({
+        'createSurface': {'surfaceId': 'main', 'catalogId': GenUiCatalog.basicV1CatalogId, 'components': components},
+      });
+      final inline = await render(buildV1(), [
+        createWith([
+          {'id': 'root', 'component': 'Text', 'text': 'hi'},
+        ]),
+      ]);
+      expect(inline.status, EnvelopeStatus.ok, reason: inline.error?.message);
+      final unknown = await render(buildV1(), [
+        createWith([
+          {'id': 'root', 'component': 'Image', 'url': 'x'},
+        ]),
+      ]);
+      expect(unknown.error!.message, contains('messages[0].createSurface.components[0].component "Image"'));
+    });
+
     test('a 1.0 catalog refuses v0.9 messages and a v0.9 catalog refuses 1.0 ones', () async {
       final v09ToV1 = await render(buildV1(), [create(), update()]);
       expect(v09ToV1.error!.message, contains('version must be "1.0"'));

@@ -1,3 +1,8 @@
+## 1.1.1
+
+- A2UI 1.0: components given in `createSurface` are checked like those of
+  `updateComponents`. Before, such a batch was rejected for having no `root`.
+
 ## 1.1.0
 
 - `GenUiBridge.prepare`: an optional host step between validation and display,
